@@ -1,0 +1,2171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LUMEN 3D Printing Services - Management & Ordering System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Boxicons -->
+    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    <!-- Three.js + OrbitControls + STLLoader untuk 3D Interaktif -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        lumen: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0f172a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .bento-card { background: white; border-radius: 1.25rem; border: 1px solid #e2e8f0; box-shadow: 0 4px 20px -2px rgba(0,0,0,0.03); }
+        .btn-primary { background-color: #0284c7; color: white; font-weight: 600; padding: 0.625rem 1.25rem; border-radius: 0.75rem; transition: all 0.2s; }
+        .btn-primary:hover { background-color: #0369a1; }
+        .btn-secondary { background-color: #f1f5f9; color: #334155; font-weight: 600; padding: 0.625rem 1.25rem; border-radius: 0.75rem; }
+        .btn-secondary:hover { background-color: #e2e8f0; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        .invoice-paper {
+            width: min(105mm, calc((100vh - 110px) * 0.709), calc(100vw - 24px));
+            aspect-ratio: 105 / 148;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+
+        @page { size: A6 portrait; margin: 0; }
+
+        @media print {
+            html, body {
+                width: 105mm !important;
+                height: 148mm !important;
+                min-height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+                background: #fff !important;
+            }
+            body { display: block !important; }
+            body * { visibility: hidden !important; }
+            #invoiceModal, #invoiceModal * { visibility: visible !important; }
+            #invoiceModal {
+                display: block !important;
+                position: fixed !important;
+                inset: 0 !important;
+                width: 105mm !important;
+                height: 148mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+                background: #fff !important;
+            }
+            #invoiceModal > .invoice-modal-panel {
+                display: block !important;
+                position: absolute !important;
+                inset: 0 !important;
+                width: 105mm !important;
+                height: 148mm !important;
+                max-width: none !important;
+                max-height: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                background: #fff !important;
+            }
+            #invoicePaper {
+                display: block !important;
+                position: absolute !important;
+                inset: 0 !important;
+                width: 105mm !important;
+                height: 148mm !important;
+                min-height: 0 !important;
+                max-height: none !important;
+                aspect-ratio: auto !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+                padding: 7mm !important;
+                border: 0 !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                font-size: 8pt !important;
+                line-height: 1.25 !important;
+            }
+            #invoicePaper .space-y-3 > :not([hidden]) ~ :not([hidden]) { margin-top: 5pt !important; }
+            #invoicePaper .space-y-1 > :not([hidden]) ~ :not([hidden]) { margin-top: 2pt !important; }
+            #invoicePaper .invoice-print-hide { display: none !important; }
+            #invoicePaper table { font-size: 7.5pt !important; }
+            #invoicePaper th, #invoicePaper td { padding-top: 3pt !important; padding-bottom: 3pt !important; }
+            #invoicePaper #invCustAddress { overflow-wrap: anywhere !important; }
+            #invoiceContent {
+                width: 100% !important;
+                transform: scale(var(--invoice-print-scale, 1));
+                transform-origin: top left;
+            }
+            #invoiceActions { display: none !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <header class="bg-white/90 backdrop-blur border-b border-slate-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div id="mainLogoContainer" class="flex items-center justify-center">
+                    <div class="w-10 h-10 rounded-xl bg-lumen-600 flex items-center justify-center text-white font-bold text-xl shadow-md" id="brandLogoIcon">
+                        L
+                    </div>
+                </div>
+                <div>
+                    <span class="font-bold text-lg text-slate-900 tracking-tight block leading-none" id="brandName">LUMEN</span>
+                    <span class="text-[11px] text-slate-500 font-medium tracking-wide uppercase" id="brandTagline">3D Printing Services</span>
+                </div>
+            </div>
+
+            <nav class="hidden md:flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                <button onclick="switchTab('home')" id="nav-home" class="nav-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-slate-700 bg-white shadow-sm">Home & Preview</button>
+                <button onclick="switchTab('order')" id="nav-order" class="nav-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900">Mulai Order</button>
+                <button onclick="switchTab('track')" id="nav-track" class="nav-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900">Cek Order</button>
+                <button onclick="switchTab('admin')" id="nav-admin" class="nav-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900">Admin Portal</button>
+            </nav>
+
+            <div class="flex items-center gap-2">
+                <a id="btnQuickWA" target="_blank" class="hidden sm:inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-3.5 py-1.5 rounded-xl text-sm font-semibold shadow-sm transition">
+                    <i class='bx bxl-whatsapp text-lg'></i> Contact WA
+                </a>
+                <button onclick="toggleMobileNav()" class="md:hidden text-2xl text-slate-700 p-1">
+                    <i class='bx bx-menu'></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="mobileNav" class="hidden md:hidden border-t border-slate-100 bg-white px-4 py-3 space-y-2">
+            <button onclick="switchTab('home')" class="block w-full text-left py-2 px-3 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50">Home & Preview</button>
+            <button onclick="switchTab('order')" class="block w-full text-left py-2 px-3 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50">Mulai Order</button>
+            <button onclick="switchTab('track')" class="block w-full text-left py-2 px-3 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50">Cek Order</button>
+            <button onclick="switchTab('admin')" class="block w-full text-left py-2 px-3 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50">Admin Portal</button>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- SECTION 1: HOME & 3D STL PREVIEW -->
+        <section id="sec-home" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="bento-card p-6 space-y-3">
+                        <span class="inline-block px-3 py-1 bg-lumen-50 text-lumen-700 font-semibold text-xs rounded-full border border-lumen-100">Wujudkan ide kamu sekarang!</span>
+                        <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight" id="heroTitle">Cetak Model 3D Presisi Tinggi, Cepat & Transparan</h1>
+                        <p class="text-slate-600 text-sm sm:text-base" id="heroSubtitle">Unggah file 3D kamu (.STL), putar & amati model secara interaktif, dapatkan estimasi harga otomatis secara langsung.</p>
+                        <div class="pt-2 flex flex-wrap gap-3">
+                            <button onclick="switchTab('order')" class="btn-primary flex items-center gap-2">
+                                <i class='bx bx-rocket'></i> Reservasi Online
+                            </button>
+                            <label for="stlFileInput" class="btn-secondary cursor-pointer flex items-center gap-2">
+                                <i class='bx bx-upload'></i> Upload STL File
+                            </label>
+                            <input type="file" id="stlFileInput" accept=".stl" class="hidden" onchange="handleFileUpload(event)">
+                        </div>
+                    </div>
+
+                    <div class="bento-card p-4 relative overflow-hidden">
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                            <div class="flex items-center gap-2">
+                                <i class='bx bx-cube-alt text-xl text-lumen-600'></i>
+                                <span class="font-bold text-sm text-slate-800" id="currentFileName">Default_Mechanical_Gear.stl</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs">
+                                <button onclick="reset3DCamera()" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600 flex items-center gap-1"><i class='bx bx-refresh text-base'></i> Reset Camera</button>
+                                <button onclick="toggle3DWireframe()" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-600 flex items-center gap-1"><i class='bx bx-grid-alt text-base'></i> Wireframe</button>
+                            </div>
+                        </div>
+                        
+                        <div id="threeCanvasContainer" class="w-full h-80 sm:h-96 bg-slate-900 rounded-xl mt-3 relative overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing">
+                            <canvas id="threeCanvas" class="w-full h-full block"></canvas>
+                            <div class="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-2 shadow-lg">
+                                <i class='bx bx-mouse text-lumen-500 text-base'></i>
+                                <span>Klik Drag: Rotasi | Scroll: Zoom | Klik Kanan: Geser</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 text-center">
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                <span class="text-xs text-slate-500 block">Dimensi (mm)</span>
+                                <span class="text-sm font-bold text-slate-800" id="statDim">40.0 x 40.0 x 10.0 mm</span>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                <span class="text-xs text-slate-500 block">Volume Model</span>
+                                <span class="text-sm font-bold text-slate-800" id="statVol">12.5 cm³</span>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                <span class="text-xs text-slate-500 block">Estimasi Berat</span>
+                                <span class="text-sm font-bold text-slate-800" id="statWeight">15.5 gram</span>
+                            </div>
+                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                <span class="text-xs text-slate-500 block">Estimasi Waktu</span>
+                                <span class="text-sm font-bold text-slate-800" id="statTime">~1.2 Jam</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 space-y-6">
+                    <div class="bento-card p-6 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2">
+                                <i class='bx bx-calculator text-lumen-600'></i> Instant Price Calculator
+                            </h3>
+                            <span class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded-full">Live Estimate</span>
+                        </div>
+
+                        <div class="space-y-3">
+                            <div>
+                                <label class="text-xs font-semibold text-slate-600 block mb-1">Pilihan Bahan Filament</label>
+                                <select id="calcMaterial" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lumen-500" onchange="recalculatePrice()">
+                                </select>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-xs font-semibold text-slate-600 block mb-1">Infill Density (%)</label>
+                                    <select id="calcInfill" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lumen-500" onchange="recalculatePrice()">
+                                        <option value="15">15% (Standard)</option>
+                                        <option value="20" selected>20% (Recommended)</option>
+                                        <option value="50">50% (Strong Part)</option>
+                                        <option value="100">100% (Solid)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-semibold text-slate-600 block mb-1">Jumlah (QTY)</label>
+                                    <input type="number" id="calcQty" min="1" value="1" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lumen-500" onchange="recalculatePrice()">
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-900 text-white p-4 rounded-xl space-y-2 mt-4">
+                                <div class="flex justify-between text-xs text-slate-400">
+                                    <span>Biaya Bahan (<span id="calcMatName">PLA</span>)</span>
+                                    <span id="priceMat">Rp 12.400</span>
+                                </div>
+                                <div class="flex justify-between text-xs text-slate-400">
+                                    <span>Biaya Jam Cetak & Mesin</span>
+                                    <span id="priceMachine">Rp 4.200</span>
+                                </div>
+                                <div class="border-t border-slate-800 pt-2 flex justify-between items-center">
+                                    <span class="font-semibold text-sm">Estimasi Total Harga:</span>
+                                    <span class="text-xl font-extrabold text-lumen-500" id="priceTotal">Rp 16.600</span>
+                                </div>
+                            </div>
+
+                            <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1">
+                                <div class="font-bold flex items-center gap-1.5 text-amber-800">
+                                    <i class='bx bx-info-circle text-base text-amber-600'></i> Catatan Penting
+                                </div>
+                                <p class="text-[11px] leading-snug">
+                                    Harga di atas merupakan estimasi perkiraan otomatis sistem. Untuk harga final, jasa desain 3D, diskon kuantitas, dan penyesuaian khusus, <strong>silahkan konfirmasi dengan admin.</strong>
+                                </p>
+                            </div>
+
+                            <button onclick="proceedToOrderWithCurrentConfig()" class="w-full btn-primary py-3 rounded-xl flex items-center justify-center gap-2">
+                                Lanjutkan Ke Form Order <i class='bx bx-right-arrow-alt text-lg'></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bento-card p-6 space-y-3">
+                        <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                            <i class='bx bx-map-pin text-rose-500'></i> Lokasi Workshop
+                        </h3>
+                        <p class="text-xs text-slate-600" id="workshopAddress">Jl. Sukarno Hatta No. 45, Lowokwaru, Malang, Jawa Timur</p>
+                        
+                        <div class="w-full h-40 bg-slate-100 rounded-xl overflow-hidden border border-slate-200 relative">
+                            <iframe
+                                    id="mapsEmbed"
+                                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1975.5491992455304!2d112.63598472740034!3d-7.988774399004604!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dd629003d13dc7d%3A0xf30a174967a25271!2sLUMEN%203D%20Printing%20Malang!5e0!3m2!1sid!2sid!4v1791168311340!5m2!1sid!2sid"
+                                    width="100%"
+                                    height="100%"
+                                    style="border:0;"
+                                    allowfullscreen=""
+                                    loading="lazy"
+                                    referrerpolicy="strict-origin-when-cross-origin">
+                            </iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: CUSTOMER ORDER WIZARD -->
+        <section id="sec-order" class="hidden space-y-6 max-w-3xl mx-auto">
+            <div class="bento-card p-6 sm:p-8 space-y-6">
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-lumen-600 block mb-1">Wizard Pemesanan Cetak 3D</span>
+                    <h2 class="text-2xl font-bold text-slate-900">Form Order Cetak LUMEN</h2>
+                </div>
+
+                <form id="orderForm" onsubmit="submitOrder(event)" class="space-y-6">
+                    <div class="space-y-4">
+                        <h4 class="font-bold text-sm text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-lumen-600 text-white text-xs flex items-center justify-center">1</span>
+                            Data Pemesan / Customer
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs font-semibold text-slate-700 block mb-1">Nama Lengkap *</label>
+                                <input type="text" id="custName" required placeholder="Contoh: Budi Santoso" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lumen-500">
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold text-slate-700 block mb-1">Nomor WhatsApp *</label>
+                                <input type="tel" id="custPhone" required placeholder="08123456789" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lumen-500">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-700 block mb-1">Alamat Pengiriman Lengkap *</label>
+                            <textarea id="custAddress" required rows="2" placeholder="Jl. Raya Utama No. 12, Kec. Lowokwaru, Kota Malang, 65141" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lumen-500"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <h4 class="font-bold text-sm text-slate-900 border-b border-slate-100 pb-2 flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-lumen-600 text-white text-xs flex items-center justify-center">2</span>
+                            Spesifikasi Cetak 3D
+                        </h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs font-semibold text-slate-700 block mb-1">Pilihan Material</label>
+                                <select id="orderMaterial" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lumen-500" onchange="syncOrderCalculation()">
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold text-slate-700 block mb-1">Warna Filament</label>
+                                <select id="orderColor" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lumen-500">
+                                    <option value="Hitam">Hitam (Black)</option>
+                                    <option value="Putih">Putih (White)</option>
+                                    <option value="Abu-abu">Abu-abu (Gray)</option>
+                                    <option value="Merah">Merah (Red)</option>
+                                    <option value="Biru">Biru (Blue)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-3">
+                            <div>
+                                <label class="text-xs font-semibold text-slate-700 block mb-1">Layer Height</label>
+                                <select id="orderLayer" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lumen-500">
+                                    <option value="0.12">0.12 mm (Fine)</option>
+                                    <option value="0.20" selected>0.20 mm (Standard)</option>
+                                    <option value="0.28">0.28 mm (Draft)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold text-slate-700 block mb-1">Infill Density</label>
+                                <select id="orderInfill" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lumen-500" onchange="syncOrderCalculation()">
+                                    <option value="15">15%</option>
+                                    <option value="20" selected>20%</option>
+                                    <option value="50">50%</option>
+                                    <option value="100">100%</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold text-slate-700 block mb-1">Jumlah (Pcs)</label>
+                                <input type="number" id="orderQty" min="1" value="1" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lumen-500" onchange="syncOrderCalculation()">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-semibold text-slate-700 block mb-1">Catatan Tambahan Project (Opsional)</label>
+                            <input type="text" id="orderNotes" placeholder="Contoh: Perlu Jasa Desain CAD dari draft kasar, toleransi lubang pas." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lumen-500">
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-100 p-4 rounded-xl border border-slate-200 space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-600">Total Berat Estimasi:</span>
+                            <span class="font-bold text-slate-800" id="orderEstWeight">15.5 Gram</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-600">Estimasi Biaya Cetak Base:</span>
+                            <span class="font-extrabold text-lg text-lumen-600" id="orderEstTotal">Rp 16.600</span>
+                        </div>
+                        <p class="text-[11px] text-amber-700 bg-amber-50 p-2 rounded border border-amber-200 font-medium">
+                            *Note: Biaya akhir termasuk penambahan Jasa Desain 3D / Finishing akan disesuaikan dan dikonfirmasi oleh Admin pada Nota Invoice.
+                        </p>
+                    </div>
+
+                    <button type="submit" id="btnSubmitOrder" class="w-full btn-primary py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+                        <i class='bx bx-check-circle text-xl'></i> Kirim Pesanan & Generate Antrian
+                    </button>
+                </form>
+            </div>
+        </section>
+
+        <!-- SECTION 3: CHECK ORDER / TRACKING WITH AUTO-FILTER & SUGGESTIONS -->
+        <section id="sec-track" class="hidden space-y-6 max-w-2xl mx-auto">
+            <div class="bento-card p-6 space-y-6">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900">Pelacakan Status Order & Antrian</h2>
+                    <p class="text-xs text-slate-500">Ketik Nama atau Nomor Nota / Antrian Anda untuk mencari dan memfilter orderan secara otomatis.</p>
+                </div>
+
+                <div class="relative">
+                    <div class="flex gap-2">
+                        <div class="relative flex-1">
+                            <input type="text" id="trackOrderNum" oninput="handleTrackInput(this.value)" placeholder="Ketik Nama Pemesan atau No Nota (misal: Budi / LUMEN-2026-0001)..." class="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-lumen-500">
+                            <i class='bx bx-search absolute left-3 top-3 text-slate-400 text-lg'></i>
+                        </div>
+                        <button onclick="performTracking()" class="btn-primary flex items-center gap-1 px-4">
+                            Cari
+                        </button>
+                    </div>
+
+                    <!-- Auto-Suggestions Dropdown -->
+                    <div id="trackSuggestions" class="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-30 hidden max-h-60 overflow-y-auto divide-y divide-slate-100">
+                        <!-- Dynamic Options -->
+                    </div>
+                </div>
+
+                <div id="trackResult" class="hidden space-y-4 pt-4 border-t border-slate-100">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-xs text-slate-400 block">Nomor Order / Nota</span>
+                            <span class="font-bold text-slate-800 text-lg" id="resOrderNum">LUMEN-2026-0001</span>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 uppercase" id="resStatus">QUEUE</span>
+                    </div>
+
+                    <div id="trackTimeline" class="space-y-3 text-xs pt-2">
+                        <div class="flex items-center gap-3 text-lumen-600 font-bold"><i class='bx bx-loader-alt bx-spin text-lg'></i> Order Received & Reviewed</div>
+                        <div class="flex items-center gap-3 text-slate-400"><i class='bx bx-circle text-lg'></i> Payment & Price Confirmed</div>
+                        <div class="flex items-center gap-3 text-slate-400"><i class='bx bx-circle text-lg'></i> Design Progress</div>
+                        <div class="flex items-center gap-3 text-slate-400"><i class='bx bx-circle text-lg'></i> In Production / Printing</div>
+                        <div class="flex items-center gap-3 text-slate-400"><i class='bx bx-circle text-lg'></i> Quality Control & Finishing</div>
+                        <div class="flex items-center gap-3 text-slate-400"><i class='bx bx-circle text-lg'></i> Ready for Pickup / Shipping</div>
+                    </div>
+
+                    <div class="bg-slate-50 p-4 rounded-xl text-xs space-y-1">
+                        <div class="flex justify-between"><span class="text-slate-500">Pemesan:</span><span class="font-medium" id="resName">Budi Santoso</span></div>
+                        <div class="flex justify-between"><span class="text-slate-500">Material & Item:</span><span class="font-medium" id="resItem">PLA Standard (Hitam) - 1 pcs</span></div>
+                        <div class="flex justify-between"><span class="text-slate-500">Total Pembayaran:</span><span class="font-bold text-slate-800" id="resTotal">Rp 66.600</span></div>
+                    </div>
+
+                    <button onclick="openInvoiceModalFromTrack()" class="w-full btn-secondary text-xs flex items-center justify-center gap-2">
+                        <i class='bx bx-receipt'></i> Lihat Rincian & Download Nota Invoice
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: ADMIN PORTAL -->
+        <section id="sec-admin" class="hidden space-y-6">
+            <div id="adminLoginBox" class="bento-card p-6 max-w-md mx-auto space-y-4">
+                <div class="text-center">
+                    <div class="w-12 h-12 bg-slate-900 text-white rounded-2xl mx-auto flex items-center justify-center text-2xl font-bold mb-2">L</div>
+                    <h3 class="font-bold text-lg text-slate-900">Admin Authentication</h3>
+                    <p class="text-xs text-slate-500">Akses Sistem Manajemen LUMEN 3D Printing</p>
+                </div>
+                <form onsubmit="handleAdminLogin(event)" class="space-y-3" autocomplete="off">
+                    <div>
+                        <label class="text-xs font-semibold text-slate-600 block mb-1">Username</label>
+                        <input type="text" id="adminUser" value="lumen3d" placeholder="admin" autocomplete="on" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lumen-500">
+                    </div>
+                    <div>
+                        <label class="text-xs font-semibold text-slate-600 block mb-1">Password</label>
+                        <input type="password" id="adminPass" value="" placeholder="******" autocomplete="new-password" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lumen-500">
+                    </div>
+                    <button type="submit" class="w-full btn-primary py-2.5 rounded-xl font-bold">Login Dashboard</button>
+                </form>
+            </div>
+
+            <div id="adminDashboard" class="hidden space-y-6">
+                <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-900 text-white p-4 rounded-2xl">
+                    <div class="flex items-center gap-3">
+                        <i class='bx bx-shield-quarter text-2xl text-lumen-500'></i>
+                        <div>
+                            <span class="font-bold text-sm block">LUMEN Operating System - Admin Control</span>
+                            <span class="text-xs text-slate-400">Google Sheets Sync & Production Kanban</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="fetchInitialData()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-semibold flex items-center gap-1"><i class='bx bx-refresh'></i> Sync Sheets</button>
+                        <button onclick="logoutAdmin()" class="px-3 py-1.5 bg-rose-600/80 hover:bg-rose-600 rounded-xl text-xs font-semibold flex items-center gap-1"><i class='bx bx-log-out'></i> Logout</button>
+                    </div>
+                </div>
+
+                <div class="flex border-b border-slate-200 overflow-x-auto gap-2">
+                    <button onclick="switchAdminSubTab('orders')" id="sub-orders" class="px-4 py-2 text-sm font-bold border-b-2 border-lumen-600 text-lumen-600">Orders List</button>
+                    <button onclick="switchAdminSubTab('production')" id="sub-production" class="px-4 py-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800">Production Kanban</button>
+                    <button onclick="switchAdminSubTab('reports')" id="sub-reports" class="px-4 py-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800">Omset &amp; Profit</button>
+                    <button onclick="switchAdminSubTab('filaments')" id="sub-filaments" class="px-4 py-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800">Filament Database</button>
+                    <button onclick="switchAdminSubTab('printers')" id="sub-printers" class="px-4 py-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800">Printers</button>
+                    <button onclick="switchAdminSubTab('settings')" id="sub-settings" class="px-4 py-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800">Settings & Branding</button>
+                </div>
+
+                <!-- SUB TAB 1: ORDERS LIST -->
+                <div id="tab-admin-orders" class="space-y-4">
+                    <p class="text-xs text-slate-500">Sesuaikan berat aktual dan harga jual per gram setelah pengecekan admin, lalu tekan <strong>Simpan</strong>. Total order dihitung ulang dan disinkronkan ke Google Sheets.</p>
+                    <div class="bento-card p-4 overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-600">
+                            <thead class="bg-slate-50 text-slate-700 uppercase tracking-wider">
+                                <tr>
+                                    <th class="p-3">Order ID / No Nota</th>
+                                    <th class="p-3">Customer</th>
+                                    <th class="p-3">Spesifikasi & Rincian</th>
+                                    <th class="p-3">Berat Aktual (g)</th>
+                                    <th class="p-3">Harga Jual / Gram</th>
+                                    <th class="p-3">Total Harga</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3">Aksi (Koreksi / Nota)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminOrderTableBody" class="divide-y divide-slate-100">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SUB TAB 2: KANBAN BOARD (REVISED & LINKED TO GSHEET) -->
+                <div id="tab-admin-production" class="hidden space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-base">Production Kanban Board</h4>
+                            <p class="text-xs text-slate-500">Status order terupdate secara real-time dari Google Sheets App Script.</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4 items-start">
+                        <div class="bg-slate-100/80 p-3 rounded-2xl space-y-3 border border-slate-200">
+                            <div class="flex justify-between items-center px-1"><span class="font-extrabold text-xs text-slate-700 uppercase tracking-wider">QUEUE / WAITING</span><span class="text-xs font-bold bg-slate-200 px-2 py-0.5 rounded-full text-slate-700" id="countQueue">0</span></div>
+                            <div id="kanbanQueue" class="space-y-3 min-h-[150px]"></div>
+                        </div>
+                        <div class="bg-violet-50/80 p-3 rounded-2xl space-y-3 border border-violet-200">
+                            <div class="flex justify-between items-center px-1"><span class="font-extrabold text-xs text-violet-800 uppercase tracking-wider">CHECK ADMIN</span><span class="text-xs font-bold bg-violet-200 text-violet-900 px-2 py-0.5 rounded-full" id="countCheckAdmin">0</span></div>
+                            <div id="kanbanCheckAdmin" class="space-y-3 min-h-[150px]"></div>
+                        </div>
+                        <div class="bg-fuchsia-50/80 p-3 rounded-2xl space-y-3 border border-fuchsia-200">
+                            <div class="flex justify-between items-center px-1"><span class="font-extrabold text-xs text-fuchsia-800 uppercase tracking-wider">PROSES DESAIN</span><span class="text-xs font-bold bg-fuchsia-200 text-fuchsia-900 px-2 py-0.5 rounded-full" id="countDesign">0</span></div>
+                            <div id="kanbanDesign" class="space-y-3 min-h-[150px]"></div>
+                        </div>
+                        <div class="bg-blue-50/80 p-3 rounded-2xl space-y-3 border border-blue-200">
+                            <div class="flex justify-between items-center px-1"><span class="font-extrabold text-xs text-blue-800 uppercase tracking-wider">PRINTING</span><span class="text-xs font-bold bg-blue-200 text-blue-900 px-2 py-0.5 rounded-full" id="countPrinting">0</span></div>
+                            <div id="kanbanPrinting" class="space-y-3 min-h-[150px]"></div>
+                        </div>
+                        <div class="bg-amber-50/80 p-3 rounded-2xl space-y-3 border border-amber-200">
+                            <div class="flex justify-between items-center px-1"><span class="font-extrabold text-xs text-amber-800 uppercase tracking-wider">QC</span><span class="text-xs font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full" id="countQC">0</span></div>
+                            <div id="kanbanQC" class="space-y-3 min-h-[150px]"></div>
+                        </div>
+                        <div class="bg-emerald-50/80 p-3 rounded-2xl space-y-3 border border-emerald-200">
+                            <div class="flex justify-between items-center px-1"><span class="font-extrabold text-xs text-emerald-800 uppercase tracking-wider">READY</span><span class="text-xs font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full" id="countReady">0</span></div>
+                            <div id="kanbanReady" class="space-y-3 min-h-[150px]"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUB TAB: SALES & PROFIT REPORT -->
+                <div id="tab-admin-reports" class="hidden space-y-4">
+                    <div class="bento-card p-5 sm:p-6 space-y-5">
+                        <div>
+                            <h4 class="font-bold text-slate-900 text-base">Laporan Omset &amp; Estimasi Keuntungan</h4>
+                            <p class="text-xs text-slate-500 mt-1">Dihitung dari order di Google Sheets. Keuntungan adalah estimasi setelah biaya material dan mesin yang tercatat.</p>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label for="reportPeriod" class="text-xs font-semibold text-slate-600 block mb-1">Periode Laporan</label>
+                                <select id="reportPeriod" onchange="updateReportPeriodInput(); renderRevenueReport();" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                                    <option value="day">Per Hari</option>
+                                    <option value="month" selected>Per Bulan</option>
+                                    <option value="year">Per Tahun</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="reportDate" id="reportDateLabel" class="text-xs font-semibold text-slate-600 block mb-1">Pilih Bulan</label>
+                                <input type="month" id="reportDate" onchange="renderRevenueReport()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="bg-slate-900 text-white p-4 rounded-xl">
+                                <span class="text-xs text-slate-400 block">Total Omset</span>
+                                <strong id="reportRevenue" class="text-lg font-extrabold">Rp 0</strong>
+                            </div>
+                            <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl">
+                                <span class="text-xs text-emerald-700 block">Estimasi Keuntungan</span>
+                                <strong id="reportProfit" class="text-lg font-extrabold text-emerald-800">Rp 0</strong>
+                            </div>
+                            <div class="bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                                <span class="text-xs text-slate-500 block">Jumlah Order</span>
+                                <strong id="reportOrderCount" class="text-lg font-extrabold text-slate-800">0</strong>
+                            </div>
+                        </div>
+                        <div class="bento-card overflow-x-auto">
+                            <table class="w-full text-left text-xs text-slate-600">
+                                <thead class="bg-slate-50 text-slate-700 uppercase tracking-wider">
+                                    <tr>
+                                        <th class="p-3">Tanggal</th>
+                                        <th class="p-3">Order / Customer</th>
+                                        <th class="p-3">Status</th>
+                                        <th class="p-3 text-right">Omset</th>
+                                        <th class="p-3 text-right">Estimasi Profit</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="revenueReportBody" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                        <p class="text-[11px] text-slate-500">Catatan: biaya desain/layanan tambahan dianggap omset tanpa biaya tambahan yang diketahui. Untuk laba aktual, lengkapi pencatatan biaya operasional dan biaya layanan di database.</p>
+                    </div>
+                </div>
+
+                <!-- SUB TAB 3: FILAMENTS -->
+                <div id="tab-admin-filaments" class="hidden space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-base">Database Material & Filament</h4>
+                            <p class="text-xs text-slate-500">Atur harga per gram, density, dan stok inventaris material 3D print.</p>
+                        </div>
+                        <button onclick="openFilamentModal()" class="btn-primary text-xs flex items-center gap-1 shadow-sm"><i class='bx bx-plus text-base'></i> Tambah Filament</button>
+                    </div>
+                    <div class="bento-card p-4 overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-600">
+                            <thead class="bg-slate-50 text-slate-700 uppercase">
+                                <tr>
+                                    <th class="p-3">Material</th>
+                                    <th class="p-3">Density (g/cm³)</th>
+                                    <th class="p-3">Modal / Gram</th>
+                                    <th class="p-3">Jual / Gram</th>
+                                    <th class="p-3">Stok (KG)</th>
+                                    <th class="p-3 text-right">Aksi Edit / Hapus</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminFilamentTableBody" class="divide-y divide-slate-100">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SUB TAB 4: PRINTERS -->
+                <div id="tab-admin-printers" class="hidden space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-base">Manajemen Printer 3D Workshop</h4>
+                            <p class="text-xs text-slate-500">Kelola unit printer, status operasional, dan assign pekerjaan aktif.</p>
+                        </div>
+                        <button onclick="openPrinterModal()" class="btn-primary text-xs flex items-center gap-1 shadow-sm"><i class='bx bx-plus text-base'></i> Tambah Printer</button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="printerGrid">
+                    </div>
+                </div>
+
+                <!-- SUB TAB 5: SETTINGS -->
+                <div id="tab-admin-settings" class="hidden space-y-4 max-w-2xl">
+                    <div class="bento-card p-6 space-y-4">
+                        <h4 class="font-bold text-slate-900 border-b border-slate-100 pb-2">Pengaturan Branding, Logo Nota, & Lokasi Workshop</h4>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">Nama Bisnis / Brand</label>
+                            <input type="text" id="settingBrandName" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">URL Logo Nota / Invoice</label>
+                            <input type="text" id="settingLogoUrl" placeholder="https://domain.com/logo.png" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">Alamat Workshop</label>
+                            <input type="text" id="settingAddress" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">Nomor WhatsApp Admin</label>
+                            <input type="text" id="settingWA" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">Link Google Maps (tautan lengkap atau koordinat)</label>
+                            <input type="text" id="settingMapsUrl" placeholder="https://www.google.com/maps/place/... atau -7.9482,112.617" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                        </div>
+                        <button onclick="saveAdminSettings()" class="btn-primary py-2 text-xs font-bold flex items-center gap-1">
+                            <i class='bx bx-save'></i> Simpan Pengaturan & Branding
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- EDIT ORDER MODAL -->
+    <div id="editOrderModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base">Koreksi Nota & Biaya Order</h3>
+                    <span class="text-xs text-slate-400" id="editModalOrderNum">LUMEN-2026-0001</span>
+                </div>
+                <button onclick="closeEditOrderModal()" class="text-slate-400 hover:text-slate-600 text-xl"><i class='bx bx-x'></i></button>
+            </div>
+
+            <form id="editOrderForm" onsubmit="saveOrderEdits(event)" class="space-y-4 text-xs">
+                <input type="hidden" id="editOrderId">
+
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+                    <label for="editActualWeight" class="font-bold text-slate-800 block">1. Berat Aktual Setelah Pengecekan Admin</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="editActualWeight" min="0" step="0.1" required class="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-lumen-500" oninput="calculateEditModalTotal()">
+                        <span class="text-slate-500">gram</span>
+                    </div>
+                    <label for="editSellGram" class="font-bold text-slate-800 block pt-1">2. Harga Jual Material per Gram (dapat disesuaikan admin)</label>
+                    <div class="flex items-center gap-2">
+                        <span class="font-semibold text-slate-500">Rp</span>
+                        <input type="number" id="editSellGram" min="0" step="1" required class="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-lumen-500" oninput="calculateEditModalTotal()">
+                        <span class="text-slate-500">/ gram</span>
+                    </div>
+                    <div class="flex items-center justify-between pt-1 text-slate-600">
+                        <label for="editBasePrice" class="font-semibold">Biaya cetak utama (material + mesin)</label>
+                        <span class="font-bold text-slate-800" id="editBasePriceDisplay">Rp 0</span>
+                    </div>
+                    <input type="hidden" id="editBasePrice">
+                    <p class="text-[10px] text-slate-500">Biaya utama dihitung dari berat aktual × harga jual/gram, ditambah estimasi biaya mesin.</p>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="font-bold text-slate-800">3. Layanan Tambahan (Jasa Desain, Finishing, Ongkir, dll)</label>
+                        <button type="button" onclick="addExtraItemRow()" class="px-2.5 py-1 bg-lumen-50 hover:bg-lumen-100 text-lumen-700 font-bold rounded-lg border border-lumen-200 flex items-center gap-1 text-[11px]">
+                            <i class='bx bx-plus'></i> Tambah Item
+                        </button>
+                    </div>
+
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" onclick="addPresetExtraItem('Jasa Desain 3D CAD', 50000)" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[10px] font-medium">+ Jasa Desain (Rp 50k)</button>
+                        <button type="button" onclick="addPresetExtraItem('Jasa Desain Kompleks', 100000)" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[10px] font-medium">+ Desain Kompleks (Rp 100k)</button>
+                        <button type="button" onclick="addPresetExtraItem('Finishing & Amplas', 15000)" class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[10px] font-medium">+ Finishing (Rp 15k)</button>
+                    </div>
+
+                    <div id="extraItemsContainer" class="space-y-2"></div>
+                </div>
+
+                <div>
+                    <label class="font-bold text-slate-800 block mb-1">4. Status Order (Sinkron ke Google Sheets)</label>
+                    <select id="editOrderStatus" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 font-medium">
+                        <option value="QUEUE">QUEUE / WAITING</option>
+                        <option value="CHECK_ADMIN">CHECK ADMIN</option>
+                        <option value="DESIGN">PROSES DESAIN</option>
+                        <option value="PRINTING">PRINTING</option>
+                        <option value="QC">QC & FINISHING</option>
+                        <option value="READY">READY (Siap Ambil/Kirim)</option>
+                        <option value="COMPLETED">COMPLETED (Selesai)</option>
+                    </select>
+                </div>
+
+                <div class="bg-slate-900 text-white p-4 rounded-xl flex justify-between items-center">
+                    <div>
+                        <span class="text-xs text-slate-400 block">Total Akhir Nota Invoice</span>
+                        <span class="text-lg font-extrabold text-lumen-400" id="editModalCalculatedTotal">Rp 0</span>
+                    </div>
+                    <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-1 rounded-md border border-slate-700">Auto Recalculated</span>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeEditOrderModal()" class="flex-1 btn-secondary py-2">Batal</button>
+                    <button type="submit" class="flex-1 btn-primary py-2 font-bold flex items-center justify-center gap-1">
+                        <i class='bx bx-save'></i> Simpan Nota
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL EDIT / TAMBAH FILAMENT -->
+    <div id="filamentModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-900 text-base" id="filamentModalTitle">Tambah Material Filament</h3>
+                <button onclick="closeFilamentModal()" class="text-slate-400 hover:text-slate-600 text-xl"><i class='bx bx-x'></i></button>
+            </div>
+            <form id="filamentForm" onsubmit="saveFilament(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="filamentId">
+                <div>
+                    <label class="font-semibold text-slate-700 block mb-1">Nama Material *</label>
+                    <input type="text" id="filamentName" required placeholder="Contoh: PLA Silk Gold" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="font-semibold text-slate-700 block mb-1">Density (g/cm³) *</label>
+                        <input type="number" step="0.01" id="filamentDensity" required placeholder="1.24" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="font-semibold text-slate-700 block mb-1">Stok Inventaris (KG)</label>
+                        <input type="number" step="0.1" id="filamentStock" required placeholder="5.0" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="font-semibold text-slate-700 block mb-1">Harga Modal / Gram (Rp)</label>
+                        <input type="number" id="filamentCost" required placeholder="150" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="font-semibold text-slate-700 block mb-1">Harga Jual / Gram (Rp)</label>
+                        <input type="number" id="filamentSell" required placeholder="800" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                    </div>
+                </div>
+                <div class="flex gap-2 pt-3">
+                    <button type="button" onclick="closeFilamentModal()" class="flex-1 btn-secondary py-2">Batal</button>
+                    <button type="submit" class="flex-1 btn-primary py-2 font-bold">Simpan Filament</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL EDIT / TAMBAH PRINTER -->
+    <div id="printerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-slate-900 text-base" id="printerModalTitle">Tambah Unit Printer 3D</h3>
+                <button onclick="closePrinterModal()" class="text-slate-400 hover:text-slate-600 text-xl"><i class='bx bx-x'></i></button>
+            </div>
+            <form id="printerForm" onsubmit="savePrinter(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="printerId">
+                <div>
+                    <label class="font-semibold text-slate-700 block mb-1">Nama / Tipe Printer *</label>
+                    <input type="text" id="printerName" required placeholder="Contoh: Creality K1 Max" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                </div>
+                <div>
+                    <label class="font-semibold text-slate-700 block mb-1">Status Operational</label>
+                    <select id="printerStatus" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                        <option value="IDLE">IDLE (Siap Cetak)</option>
+                        <option value="PRINTING">PRINTING (Sedang Bekerja)</option>
+                        <option value="MAINTENANCE">MAINTENANCE (Perbaikan / Service)</option>
+                        <option value="OFFLINE">OFFLINE (Nonaktif)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="font-semibold text-slate-700 block mb-1">Job Aktif / Order ID</label>
+                    <input type="text" id="printerJob" placeholder="Contoh: LUMEN-2026-0001 atau '-'" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                </div>
+                <div class="flex gap-2 pt-3">
+                    <button type="button" onclick="closePrinterModal()" class="flex-1 btn-secondary py-2">Batal</button>
+                    <button type="submit" class="flex-1 btn-primary py-2 font-bold">Simpan Printer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- INVOICE / NOTA MODAL -->
+    <div id="invoiceModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-0 sm:p-4">
+        <div class="invoice-modal-panel w-full h-full bg-slate-100 sm:rounded-2xl flex flex-col items-center justify-center gap-3 p-3 sm:p-5 overflow-y-auto">
+            <div id="invoicePaper" class="invoice-paper bg-white text-slate-800 rounded-lg shadow-xl border border-slate-200 p-5 sm:p-6 flex flex-col gap-3">
+                <div id="invoiceContent" class="flex flex-col gap-3">
+                <div class="flex justify-between items-start border-b border-slate-200 pb-2">
+                    <div class="flex items-center gap-2">
+                        <div id="invLogoContainer">
+                            <div class="w-9 h-9 bg-slate-900 text-white rounded-lg flex items-center justify-center font-bold text-base">L</div>
+                        </div>
+                        <div class="min-w-0">
+                            <span class="font-bold text-sm block leading-tight text-slate-900" id="invBrand">LUMEN 3D PRINTING</span>
+                            <span class="text-[8 px] text-slate-700">Jl. Zaenal Zakse I No.26, Kotalama, Kedungkandang, Kota Malang 65136</span>
+                        </div>
+                    </div>
+                    <button onclick="closeInvoiceModal()" class="invoice-print-hide text-slate-400 hover:text-slate-600 text-xl" aria-label="Tutup nota"><i class='bx bx-x'></i></button>
+                </div>
+
+                <div class="text-[10px] space-y-2 flex-1">
+                    <div class="flex justify-between bg-slate-50 p-2 rounded-lg border border-slate-100">
+                        <div>
+                            <span class="text-slate-500 block">Nomor Nota / Antrian</span>
+                            <span class="font-bold text-slate-900 break-all" id="invNum">LUMEN-2026-0001</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-slate-500 block">Tanggal</span>
+                            <span class="font-bold text-slate-900" id="invDate">04/10/2026</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <span class="text-slate-500 block">Ditujukan Kepada:</span>
+                        <span class="font-bold text-slate-900 block" id="invCustName">Budi Santoso</span>
+                        <span class="text-slate-600 block" id="invCustPhone">08123456789</span>
+                        <span class="text-slate-600 block" id="invCustAddress">Lowokwaru, Malang</span>
+                    </div>
+
+                    <table class="w-full text-left border-collapse mt-1">
+                        <thead>
+                            <tr class="border-b border-slate-200 text-slate-500">
+                                <th class="py-1">Deskripsi Item / Layanan</th>
+                                <th class="py-1 text-center">QTY</th>
+                                <th class="py-1 text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="invItemsBody" class="divide-y divide-slate-100"></tbody>
+                    </table>
+
+                    <div class="border-t border-slate-200 pt-2 space-y-1 text-right">
+                        <div class="flex justify-between font-bold text-xs text-slate-900">
+                            <span>Total Pembayaran:</span>
+                            <span id="invTotalAmount">Rp 0</span>
+                        </div>
+                        <div class="text-[10px] text-emerald-700 font-bold uppercase" id="invPayStatus">STATUS: PRINTING</div>
+                    </div>
+                </div>
+
+                <div class="text-[9px] text-black font-semibold border-t border-dashed border-slate-200 pt-2 text-left leading-relaxed">
+                    *Note: Pembayaran Transfer bisa melalui Bank Jago 100672293782 a/n RAMADANI NUR UBAIDILLAH atau Shopee Pay ke 089528080341
+                </div>
+                <div class="text-[8px] text-slate-500 border-t border-dashed border-slate-200 pt-2 text-center">
+                    <div>Terima kasih sudah mempercayakan pesanan Anda kepada kami.</div>
+                    <div class="mt-1 font-semibold">
+                        <span id="invFooterBrand">LUMEN</span>
+                    </div>
+                </div>
+                </div>
+            </div>
+
+            <div id="invoiceActions" class="flex gap-2 w-full max-w-sm">
+                <button onclick="printInvoice()" class="flex-1 btn-secondary text-xs flex items-center justify-center gap-1"><i class='bx bx-printer'></i> Cetak / Simpan PDF A6</button>
+                <a id="btnSendNotaWA" target="_blank" rel="noopener" class="flex-1 btn-primary text-xs flex items-center justify-center gap-1 bg-emerald-600 hover:bg-emerald-700"><i class='bx bxl-whatsapp text-lg'></i> Kirim ke Customer</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- GLOBAL TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <i class='bx bx-info-circle text-lg text-lumen-400'></i>
+        <span id="toastMsg">Notifikasi</span>
+    </div>
+
+    <script>
+        const APP_URL = "https://script.google.com/macros/s/AKfycbyrp51bgDxawnaj-qn5OSWQOGSpvMp0MF8wxvHjYRUXAGMP9rKvxGRH0c1zmPvcRGxF/exec";
+
+        let state = {
+            materials: [
+                { id: 'm1', name: 'PLA Standard', density: 1.24, costGram: 150, sellGram: 800, stockKg: 5.0 },
+                { id: 'm2', name: 'PETG Tough', density: 1.27, costGram: 200, sellGram: 1000, stockKg: 3.5 },
+                { id: 'm3', name: 'ABS Heat-Resistant', density: 1.04, costGram: 220, sellGram: 1100, stockKg: 2.0 },
+                { id: 'm4', name: 'TPU Flexible', density: 1.21, costGram: 300, sellGram: 1500, stockKg: 1.2 }
+            ],
+            printers: [
+                { id: 'p1', name: 'Ender 3 V3 SE', status: 'PRINTING', currentJob: 'LUMEN-2026-0001' },
+                { id: 'p2', name: 'Bambu Lab P1S', status: 'IDLE', currentJob: '-' },
+                { id: 'p3', name: 'Anycubic Kobra 2', status: 'IDLE', currentJob: '-' }
+            ],
+            orders: [],
+            currentModelVolume: 0,
+            isAdmin: false,
+            settings: {
+                brandName: 'LUMEN 3D PRINTING SERVICES',
+                logoUrl: '',
+                address: 'Jl. Sukarno Hatta No. 45, Lowokwaru, Malang, Jawa Timur',
+                wa: '6289528080341',
+                mapsUrl: 'https://www.google.com/maps/place/LUMEN+3D+Printing+Malang/@-7.9887744,112.6343202,17z/data=!3m1!4b1!4m6!3m5!1s0x2dd629003d13dc7d:0xf30a174967a25271!8m2!3d-7.9887744!4d112.6368951!16s%2Fg%2F11myl8trn_?entry=ttu&g_ep=EgoyMDI2MDkzMC4wIKXMDSoASAFQAw%3D%3D'
+            }
+        };
+
+        async function callBackendAPI(actionName, payloadData = {}) {
+            try {
+                const response = await fetch(APP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: actionName,
+                        payload: payloadData
+                    })
+                });
+
+                const res = await response.json();
+                if (res.status === 'success') {
+                    return res;
+                } else {
+                    console.error('Error dari backend:', res.message);
+                    showToast('Error Backend: ' + (res.message || 'Gagal merespon request.'));
+                    return null;
+                }
+            } catch (err) {
+                console.error('Gagal terhubung ke Google Sheets:', err);
+                showToast('Gagal terhubung ke server Google Sheets.');
+                return null;
+            }
+        }
+
+        function normalizeOrderStatus(rawStatus) {
+            const status = String(rawStatus || 'QUEUE').trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+            const aliases = {
+                WAITING: 'QUEUE', WAIT: 'QUEUE', QUEUE_WAITING: 'QUEUE', WAITING_QUEUE: 'QUEUE',
+                CHECKADMIN: 'CHECK_ADMIN', ADMIN_CHECK: 'CHECK_ADMIN', PAYMENT_CONFIRMED: 'CHECK_ADMIN',
+                PAYMENT_PRICE_CONFIRMED: 'CHECK_ADMIN', CHECK_ADMIN_PAYMENT_CONFIRMED: 'CHECK_ADMIN',
+                DESIGN: 'DESIGN', DESIGN_PROGRESS: 'DESIGN', PROSES_DESAIN: 'DESIGN',
+                PRINT: 'PRINTING', PROCESSING: 'PRINTING', PRODUCTION: 'PRINTING', IN_PROGRESS: 'PRINTING',
+                QUALITY_CONTROL: 'QC', CHECKING: 'QC', QC_FINISHING: 'QC',
+                READY_FOR_PICKUP: 'READY', READY_PICKUP: 'READY', READY_SHIPPING: 'READY', DONE: 'COMPLETED'
+            };
+            return aliases[status] || status;
+        }
+
+        function normalizeOrder(rawOrder) {
+            const order = rawOrder || {};
+            const getValue = (...keys) => {
+                for (const key of keys) {
+                    if (order[key] !== undefined && order[key] !== null && order[key] !== '') return order[key];
+                }
+                return '';
+            };
+            let additionalItems = getValue('additionalItems', 'additional_items', 'Additional Items');
+            if (typeof additionalItems === 'string') {
+                try { additionalItems = JSON.parse(additionalItems); } catch (err) { additionalItems = []; }
+            }
+            if (!Array.isArray(additionalItems)) additionalItems = [];
+
+            const status = normalizeOrderStatus(getValue('status', 'Status'));
+
+            return {
+                ...order,
+                id: String(getValue('id', 'orderId', 'orderID', 'order_id', 'orderNum', 'Order ID', 'Order ID / No Nota', 'Nomor Order', 'No Nota')),
+                name: String(getValue('name', 'customer', 'customerName', 'Nama')),
+                phone: String(getValue('phone', 'customerPhone', 'Nomor WhatsApp', 'Telepon')),
+                address: String(getValue('address', 'Alamat')),
+                material: String(getValue('material', 'Material') || '-'),
+                color: String(getValue('color', 'Warna') || '-'),
+                qty: Number(getValue('qty', 'quantity', 'Jumlah')) || 1,
+                weight: Number(getValue('weight', 'Berat')) || 0,
+                basePrice: Number(getValue('basePrice', 'base_price', 'Biaya Cetak')) || 0,
+                sellGram: Number(getValue('sellGram', 'sellPricePerGram', 'sell_price_per_gram', 'Harga Jual per Gram', 'Harga Jual/Gram', 'Harga Jual / Gram')) || 0,
+                total: Number(getValue('total', 'Total', 'totalPrice')) || 0,
+                status,
+                date: String(getValue('date', 'Tanggal')),
+                additionalItems
+            };
+        }
+
+        async function fetchInitialData() {
+            showToast('Memuat data dari Google Sheets...');
+            try {
+                const res = await fetch(APP_URL);
+                const result = await res.json();
+                if (result.status === 'success' && result.data) {
+                    if (Array.isArray(result.data.materials)) state.materials = result.data.materials;
+                    if (Array.isArray(result.data.printers)) state.printers = result.data.printers;
+                    if (Array.isArray(result.data.orders)) state.orders = result.data.orders.map(normalizeOrder);
+                    if (result.data.settings) {
+                        state.settings = { ...state.settings, ...result.data.settings };
+                        if (String(state.settings.wa).replace(/\D/g, '') === '6281234567890') {
+                            state.settings.wa = '6289528080341';
+                        }
+                    }
+                    
+                    applySettingsToUI();
+                    populateMaterialDropdowns();
+                    recalculatePrice();
+                    if (state.isAdmin) renderAdminData();
+                    showToast('Data Google Sheets berhasil dimuat & tersinkron!');
+                }
+            } catch (err) {
+                console.warn('Gagal memuat data awal, menggunakan data lokal.', err);
+                populateMaterialDropdowns();
+            }
+        }
+
+        function getGoogleMapsLocation(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+
+            try {
+                const url = new URL(raw);
+                const params = url.searchParams;
+                let location = params.get('q') || params.get('query') || params.get('destination');
+
+                if (!location) {
+                    const placeMatch = url.pathname.match(/\/place\/([^/]+)/i);
+                    const coordinateMatch = url.pathname.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+                    if (placeMatch) location = decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
+                    else if (coordinateMatch) location = `${coordinateMatch[1]},${coordinateMatch[2]}`;
+                }
+
+                return location || raw;
+            } catch (err) {
+                return raw;
+            }
+        }
+
+        function getGoogleMapsEmbedUrl(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+            if (/\/maps\/embed(?:\?|\/|$)/i.test(raw)) return raw;
+
+            const location = getGoogleMapsLocation(raw);
+            return `https://maps.google.com/maps?q=${encodeURIComponent(location)}&z=15&output=embed`;
+        }
+
+        function getGoogleMapsDirectUrl(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return 'https://www.google.com/maps';
+            if (/^https?:\/\//i.test(raw) && !/\/maps\/embed(?:\?|\/|$)/i.test(raw)) return raw;
+
+            const location = getGoogleMapsLocation(raw);
+            return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+        }
+
+        function applySettingsToUI() {
+            if (state.settings.brandName) {
+                document.getElementById('brandName').innerText = state.settings.brandName.split(' ')[0] || 'LUMEN';
+                document.getElementById('brandTagline').innerText = state.settings.brandName;
+                document.getElementById('invBrand').innerText = state.settings.brandName;
+                document.getElementById('invFooterBrand').innerText = state.settings.brandName;
+            }
+            if (state.settings.address) {
+                document.getElementById('workshopAddress').innerText = state.settings.address;
+            }
+            if (state.settings.wa) {
+                document.getElementById('btnQuickWA').href = `https://wa.me/${state.settings.wa}`;
+            }
+            if (state.settings.mapsUrl) {
+                const mapEmbedUrl = getGoogleMapsEmbedUrl(state.settings.mapsUrl);
+                document.getElementById('mapsEmbed').src = mapEmbedUrl;
+                document.getElementById('btnOpenMaps').href = getGoogleMapsDirectUrl(state.settings.mapsUrl);
+            }
+            if (state.settings.logoUrl) {
+                document.getElementById('mainLogoContainer').innerHTML = `<img src="${state.settings.logoUrl}" class="h-10 w-auto rounded-xl object-contain">`;
+                document.getElementById('invLogoContainer').innerHTML = `<img src="${state.settings.logoUrl}" class="h-10 w-auto rounded-xl object-contain">`;
+            }
+            
+            document.getElementById('settingBrandName').value = state.settings.brandName || '';
+            document.getElementById('settingLogoUrl').value = state.settings.logoUrl || '';
+            document.getElementById('settingAddress').value = state.settings.address || '';
+            document.getElementById('settingWA').value = state.settings.wa || '';
+            document.getElementById('settingMapsUrl').value = state.settings.mapsUrl || '';
+        }
+
+        function populateMaterialDropdowns() {
+            const calcSelect = document.getElementById('calcMaterial');
+            const orderSelect = document.getElementById('orderMaterial');
+            
+            const optionsHtml = state.materials.map(m => `<option value="${m.id}">${m.name} (Rp ${m.sellGram}/g)</option>`).join('');
+            if (calcSelect) calcSelect.innerHTML = optionsHtml;
+            if (orderSelect) orderSelect.innerHTML = optionsHtml;
+        }
+
+        let scene, camera, renderer, mesh, controls;
+        let isWireframe = false;
+
+        function init3DViewer() {
+            const container = document.getElementById('threeCanvasContainer');
+            const canvas = document.getElementById('threeCanvas');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(45, 45, 45);
+
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight1 = new THREE.DirectionalLight(0x0284c7, 0.9);
+            dirLight1.position.set(50, 80, 50);
+            scene.add(dirLight1);
+
+            const gridHelper = new THREE.GridHelper(100, 20, 0x0284c7, 0x1e293b);
+            gridHelper.position.y = -10;
+            scene.add(gridHelper);
+
+            createDefaultGearModel();
+
+            function animate() {
+                requestAnimationFrame(animate);
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            window.addEventListener('resize', () => {
+                if (!container) return;
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
+        function createDefaultGearModel() {
+            if (mesh) scene.remove(mesh);
+            const geometry = new THREE.CylinderGeometry(15, 15, 10, 20);
+            const material = new THREE.MeshPhongMaterial({ color: 0x0284c7, specular: 0x222222, shininess: 30, wireframe: isWireframe });
+            mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+        }
+
+        function reset3DCamera() {
+            camera.position.set(45, 45, 45);
+            controls.target.set(0, 0, 0);
+            controls.update();
+        }
+
+        function toggle3DWireframe() {
+            if (!mesh) return;
+            isWireframe = !isWireframe;
+            mesh.material.wireframe = isWireframe;
+        }
+
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('currentFileName').innerText = file.name;
+            showToast(`Membaca file ${file.name}...`);
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const contents = evt.target.result;
+                    const loader = new THREE.STLLoader();
+                    const geometry = loader.parse(contents);
+
+                    if (mesh) scene.remove(mesh);
+                    geometry.computeBoundingBox();
+                    geometry.center();
+
+                    const bbox = geometry.boundingBox;
+                    const sizeX = (bbox.max.x - bbox.min.x).toFixed(1);
+                    const sizeY = (bbox.max.y - bbox.min.y).toFixed(1);
+                    const sizeZ = (bbox.max.z - bbox.min.z).toFixed(1);
+
+                    const material = new THREE.MeshPhongMaterial({ color: 0x0284c7, specular: 0x333333, shininess: 40, wireframe: isWireframe });
+                    mesh = new THREE.Mesh(geometry, material);
+                    scene.add(mesh);
+
+                    const calculatedVol = calculateMeshVolume(geometry) / 1000;
+                    state.currentModelVolume = Math.max(0.1, parseFloat(calculatedVol.toFixed(2)));
+
+                    document.getElementById('statDim').innerText = `${sizeX} x ${sizeY} x ${sizeZ} mm`;
+                    document.getElementById('statVol').innerText = `${state.currentModelVolume} cm³`;
+
+                    const maxDim = Math.max(parseFloat(sizeX), parseFloat(sizeY), parseFloat(sizeZ));
+                    camera.position.set(maxDim * 1.6, maxDim * 1.6, maxDim * 1.6);
+                    controls.target.set(0, 0, 0);
+                    controls.update();
+
+                    recalculatePrice();
+                    showToast(`Model STL ${file.name} dimuat!`);
+                } catch (err) {
+                    showToast('Format STL tidak valid.');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function calculateMeshVolume(geometry) {
+            let volume = 0;
+            const pos = geometry.attributes.position;
+            if (!pos) return 12.5;
+
+            const faces = pos.count / 3;
+            for (let i = 0; i < faces; i++) {
+                const p1 = new THREE.Vector3(pos.getX(i*3), pos.getY(i*3), pos.getZ(i*3));
+                const p2 = new THREE.Vector3(pos.getX(i*3+1), pos.getY(i*3+1), pos.getZ(i*3+1));
+                const p3 = new THREE.Vector3(pos.getX(i*3+2), pos.getY(i*3+2), pos.getZ(i*3+2));
+
+                volume += p1.dot(p2.cross(p3)) / 6.0;
+            }
+            return Math.abs(volume);
+        }
+
+        function recalculatePrice() {
+            const matSelect = document.getElementById('calcMaterial');
+            if (!matSelect || matSelect.options.length === 0) return;
+
+            const mat = state.materials.find(m => m.id === matSelect.value) || state.materials[0];
+            const infill = parseInt(document.getElementById('calcInfill').value) || 20;
+            const qty = parseInt(document.getElementById('calcQty').value) || 1;
+
+            const estWeight = (state.currentModelVolume * mat.density * (0.3 + (infill / 100) * 0.7) * qty).toFixed(1);
+            const estTime = (estWeight * 0.08).toFixed(1);
+
+            document.getElementById('statWeight').innerText = `${estWeight} gram`;
+            document.getElementById('statTime').innerText = `~${estTime} Jam`;
+
+            const matCost = Math.round(estWeight * mat.sellGram);
+            const machineCost = Math.round(estTime * 3500);
+            const total = matCost + machineCost;
+
+            document.getElementById('calcMatName').innerText = mat.name;
+            document.getElementById('priceMat').innerText = `Rp ${matCost.toLocaleString('id-ID')}`;
+            document.getElementById('priceMachine').innerText = `Rp ${machineCost.toLocaleString('id-ID')}`;
+            document.getElementById('priceTotal').innerText = `Rp ${total.toLocaleString('id-ID')}`;
+        }
+
+        function syncOrderCalculation() {
+            const matSelect = document.getElementById('orderMaterial');
+            if (!matSelect || matSelect.options.length === 0) return;
+            const mat = state.materials.find(m => m.id === matSelect.value) || state.materials[0];
+            const infill = parseInt(document.getElementById('orderInfill').value) || 20;
+            const qty = parseInt(document.getElementById('orderQty').value) || 1;
+
+            const estWeight = (state.currentModelVolume * mat.density * (0.3 + (infill / 100) * 0.7) * qty).toFixed(1);
+            const matCost = Math.round(estWeight * mat.sellGram);
+            const machineCost = Math.round((estWeight * 0.08) * 3500);
+            const total = matCost + machineCost;
+
+            document.getElementById('orderEstWeight').innerText = `${estWeight} Gram`;
+            document.getElementById('orderEstTotal').innerText = `Rp ${total.toLocaleString('id-ID')}`;
+        }
+
+        function switchTab(tab) {
+            ['home', 'order', 'track', 'admin'].forEach(t => {
+                const sec = document.getElementById(`sec-${t}`);
+                const btn = document.getElementById(`nav-${t}`);
+                if (sec) sec.classList.add('hidden');
+                if (btn) btn.className = 'nav-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900';
+            });
+
+            document.getElementById(`sec-${tab}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${tab}`);
+            if (activeBtn) activeBtn.className = 'nav-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-slate-700 bg-white shadow-sm';
+            document.getElementById('mobileNav').classList.add('hidden');
+        }
+
+        function toggleMobileNav() {
+            document.getElementById('mobileNav').classList.toggle('hidden');
+        }
+
+        function proceedToOrderWithCurrentConfig() {
+            switchTab('order');
+            syncOrderCalculation();
+        }
+
+        function getOrderDateKey(order) {
+            const idMatch = String(order.id || '').match(/^LUMEN-(\d{4})(\d{2})(\d{2})-(\d+)$/i);
+            if (idMatch) return `${idMatch[1]}${idMatch[2]}${idMatch[3]}`;
+
+            const rawDate = String(order.date || '').trim();
+            const isoMatch = rawDate.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (isoMatch) return `${isoMatch[1]}${isoMatch[2]}${isoMatch[3]}`;
+
+            const localMatch = rawDate.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/);
+            if (localMatch) return `${localMatch[3]}${localMatch[2].padStart(2, '0')}${localMatch[1].padStart(2, '0')}`;
+
+            const parsedDate = new Date(rawDate);
+            if (!rawDate || Number.isNaN(parsedDate.getTime())) return '';
+            return `${parsedDate.getFullYear()}${String(parsedDate.getMonth() + 1).padStart(2, '0')}${String(parsedDate.getDate()).padStart(2, '0')}`;
+        }
+
+        function generateNextOrderId() {
+            const now = new Date();
+            const dateKey = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+            const prefix = `LUMEN-${dateKey}-`;
+            const matchingOrders = state.orders.filter(order => getOrderDateKey(order) === dateKey);
+            const highestSequence = matchingOrders.reduce((highest, order) => {
+                const match = String(order.id || '').match(new RegExp(`^${prefix}(\\d+)$`, 'i'));
+                return match ? Math.max(highest, Number(match[1])) : highest;
+            }, 0);
+            const sequence = String(Math.max(highestSequence, matchingOrders.length) + 1).padStart(4, '0');
+            return `${prefix}${sequence}`;
+        }
+
+        // SUBMIT ORDER TO GOOGLE SHEETS
+        async function submitOrder(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnSubmitOrder');
+            btn.disabled = true;
+            btn.innerHTML = `<i class='bx bx-loader-alt bx-spin text-xl'></i> Menyimpan ke Google Sheets...`;
+
+            await refreshOrdersFromBackend();
+            const newId = generateNextOrderId();
+            const name = document.getElementById('custName').value;
+            const phone = document.getElementById('custPhone').value;
+            const address = document.getElementById('custAddress').value;
+            const matId = document.getElementById('orderMaterial').value;
+            const mat = state.materials.find(m => m.id === matId) || state.materials[0];
+            const color = document.getElementById('orderColor').value;
+            const qty = parseInt(document.getElementById('orderQty').value) || 1;
+
+            const weight = parseFloat(document.getElementById('orderEstWeight').innerText);
+            const totalStr = document.getElementById('orderEstTotal').innerText.replace(/[^0-9]/g, '');
+            const basePrice = parseInt(totalStr);
+
+            const payload = {
+                id: newId,
+                name,
+                phone,
+                address,
+                material: mat.name,
+                color,
+                weight,
+                qty,
+                sellGram: Number(mat.sellGram) || 0,
+                basePrice,
+                additionalItems: [],
+                total: basePrice,
+                status: 'QUEUE',
+                date: `${newId.slice(6, 10)}-${newId.slice(10, 12)}-${newId.slice(12, 14)}`
+            };
+
+            const response = await callBackendAPI('CREATE_ORDER', payload);
+
+            btn.disabled = false;
+            btn.innerHTML = `<i class='bx bx-check-circle text-xl'></i> Kirim Pesanan & Generate Antrian`;
+
+            if (response && response.status === 'success') {
+                state.orders.unshift(payload);
+                showToast(`Order ${newId} berhasil disimpan ke Google Sheets!`);
+                document.getElementById('orderForm').reset();
+                document.getElementById('trackOrderNum').value = newId;
+                switchTab('track');
+                performTracking();
+            }
+        }
+
+        // AUTOMATIC FILTER & SUGGESTIONS FOR TRACKING (BY NAME OR ORDER/QUEUE NUMBER)
+        function handleTrackInput(keyword) {
+            const sugBox = document.getElementById('trackSuggestions');
+            const query = keyword.trim().toLowerCase();
+
+            if (!query || query.length < 1) {
+                sugBox.classList.add('hidden');
+                sugBox.innerHTML = '';
+                return;
+            }
+
+            const matched = state.orders.filter(o => 
+                o.id.toLowerCase().includes(query) || 
+                o.name.toLowerCase().includes(query) ||
+                o.phone.includes(query)
+            );
+
+            if (matched.length === 0) {
+                sugBox.innerHTML = `<div class="p-3 text-xs text-slate-400 text-center">Tidak ditemukan order dengan kata kunci "${keyword}"</div>`;
+                sugBox.classList.remove('hidden');
+                return;
+            }
+
+            sugBox.innerHTML = matched.map(o => `
+                <div onclick="selectTrackOrder('${o.id}')" class="p-3 hover:bg-slate-50 cursor-pointer flex justify-between items-center text-xs">
+                    <div>
+                        <span class="font-bold text-slate-900 block">${o.id} - ${o.name}</span>
+                        <span class="text-slate-400">${o.material} (${o.color}) | Qty: ${o.qty}</span>
+                    </div>
+                    <span class="px-2 py-0.5 bg-lumen-50 text-lumen-700 font-bold rounded-md uppercase text-[10px]">${o.status}</span>
+                </div>
+            `).join('');
+
+            sugBox.classList.remove('hidden');
+        }
+
+        function selectTrackOrder(orderId) {
+            document.getElementById('trackOrderNum').value = orderId;
+            document.getElementById('trackSuggestions').classList.add('hidden');
+            performTracking();
+        }
+
+        async function refreshOrdersFromBackend() {
+            try {
+                const response = await fetch(APP_URL);
+                const result = await response.json();
+                if (result.status === 'success' && result.data && Array.isArray(result.data.orders)) {
+                    const latestOrders = result.data.orders.map(normalizeOrder);
+                    const latestIds = new Set(latestOrders.map(order => order.id));
+                    const localOnlyOrders = state.orders.filter(order => !latestIds.has(order.id));
+                    state.orders = [...latestOrders, ...localOnlyOrders];
+                    if (state.isAdmin) renderAdminData();
+                }
+            } catch (err) {
+                console.warn('Gagal menyegarkan status order dari Google Sheets.', err);
+            }
+        }
+
+        async function performTracking() {
+            document.getElementById('trackSuggestions').classList.add('hidden');
+            await refreshOrdersFromBackend();
+            const val = document.getElementById('trackOrderNum').value.trim().toLowerCase();
+            const found = state.orders.find(o => 
+                o.id.toLowerCase() === val || 
+                o.name.toLowerCase() === val ||
+                o.phone === val
+            );
+
+            if (!found) {
+                showToast('Nomor Order atau Nama tidak ditemukan.');
+                document.getElementById('trackResult').classList.add('hidden');
+                return;
+            }
+
+            document.getElementById('resOrderNum').innerText = found.id;
+            document.getElementById('resStatus').innerText = found.status;
+            document.getElementById('resName').innerText = found.name;
+            document.getElementById('resItem').innerText = `${found.material} (${found.color}) - ${found.qty} pcs`;
+            document.getElementById('resTotal').innerText = `Rp ${found.total.toLocaleString('id-ID')}`;
+            
+            // Status timeline follows the same canonical stages as the admin Kanban.
+            const statuses = ['QUEUE', 'CHECK_ADMIN', 'DESIGN', 'PRINTING', 'QC', 'READY'];
+            const currentStatus = normalizeOrderStatus(found.status);
+            const stageIndex = currentStatus === 'COMPLETED' ? 5 : Math.max(0, statuses.indexOf(currentStatus));
+            const timelineLabels = [
+                'Order Received & Reviewed',
+                'Payment & Price Confirmed',
+                'Design Progress',
+                'In Production / Printing',
+                'Quality Control & Finishing',
+                'Ready for Pickup / Shipping'
+            ];
+
+            document.getElementById('trackTimeline').innerHTML = timelineLabels.map((label, index) => {
+                const isCurrent = index === stageIndex && currentStatus !== 'COMPLETED';
+                const isComplete = index < stageIndex || currentStatus === 'COMPLETED';
+                const style = isCurrent ? 'text-lumen-600 font-bold' : isComplete ? 'text-emerald-600 font-semibold' : 'text-slate-400';
+                const icon = isCurrent ? 'bx-loader-alt bx-spin' : isComplete ? 'bxs-check-circle' : 'bx-circle';
+                return `<div class="flex items-center gap-3 ${style}"><i class='bx ${icon} text-lg'></i> ${label}</div>`;
+            }).join('');
+
+            document.getElementById('trackResult').classList.remove('hidden');
+        }
+
+        // ADMIN FUNCTIONS
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            const userInput = document.getElementById('adminUser');
+            const passInput = document.getElementById('adminPass');
+            const u = userInput.value;
+            const p = passInput.value;
+            passInput.value = '';
+
+            if (u === 'lumen3d' && p === 'lumen2026') {
+                state.isAdmin = true;
+                document.getElementById('adminLoginBox').classList.add('hidden');
+                document.getElementById('adminDashboard').classList.remove('hidden');
+                renderAdminData();
+                showToast('Login Admin Berhasil');
+            } else {
+                showToast('Username / Password Salah!');
+            }
+        }
+
+        function logoutAdmin() {
+            state.isAdmin = false;
+            document.getElementById('adminLoginBox').classList.remove('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+        }
+
+        function switchAdminSubTab(sub) {
+            ['orders', 'production', 'reports', 'filaments', 'printers', 'settings'].forEach(s => {
+                document.getElementById(`tab-admin-${s}`).classList.add('hidden');
+                document.getElementById(`sub-${s}`).className = 'px-4 py-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-800';
+            });
+
+            document.getElementById(`tab-admin-${sub}`).classList.remove('hidden');
+            document.getElementById(`sub-${sub}`).className = 'px-4 py-2 text-sm font-bold border-b-2 border-lumen-600 text-lumen-600';
+        }
+
+        async function saveOrderGramPrice(orderId) {
+            const order = state.orders.find(item => item.id === orderId);
+            const input = document.getElementById(`orderSellGram_${orderId}`);
+            if (!order || !input) return;
+
+            const sellGram = Number(input.value);
+            const weightInput = document.getElementById(`orderWeight_${orderId}`);
+            const weight = Number(weightInput?.value);
+            if (!Number.isFinite(sellGram) || sellGram < 0 || !Number.isFinite(weight) || weight < 0) {
+                showToast('Berat aktual dan harga jual per gram harus berupa angka nol atau lebih.');
+                return;
+            }
+
+            const basePrice = Math.round(weight * sellGram) + Math.round(weight * 0.08 * 3500);
+            const additionalItems = Array.isArray(order.additionalItems) ? order.additionalItems : [];
+            const extraTotal = additionalItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+            const total = basePrice + extraTotal;
+
+            showToast(`Menyimpan harga order ${orderId}...`);
+            const response = await callBackendAPI('SAVE_ORDER_EDITS', {
+                id: orderId,
+                weight,
+                sellGram,
+                basePrice,
+                additionalItems,
+                total,
+                status: order.status
+            });
+
+            if (!response || response.status !== 'success') return;
+            order.weight = weight;
+            order.sellGram = sellGram;
+            order.basePrice = basePrice;
+            order.total = total;
+            renderAdminData();
+            showToast(`Harga Rp ${sellGram.toLocaleString('id-ID')}/gram tersimpan untuk ${orderId}.`);
+        }
+
+        async function updateOrderStatusDirectly(orderId, newStatus) {
+            const order = state.orders.find(o => o.id === orderId);
+            if (order) {
+                order.status = newStatus;
+                renderAdminData();
+                showToast(`Memperbarui ${orderId} ke Google Sheets...`);
+                await callBackendAPI('UPDATE_ORDER_STATUS', { id: orderId, status: newStatus });
+            }
+        }
+
+        function renderAdminData() {
+            const tbody = document.getElementById('adminOrderTableBody');
+            tbody.innerHTML = state.orders.map(o => {
+                const hasExtras = o.additionalItems && o.additionalItems.length > 0;
+                const extraText = hasExtras ? `<span class="text-[10px] text-lumen-600 font-semibold block">+ ${o.additionalItems.length} extra item</span>` : '';
+                const orderMaterial = state.materials.find(item => item.name === o.material);
+                const orderSellGram = Number(o.sellGram) || Number(orderMaterial?.sellGram) || 0;
+                return `
+                    <tr>
+                        <td class="p-3 font-bold text-slate-800">${o.id}</td>
+                        <td class="p-3">
+                            <div class="font-semibold text-slate-800">${o.name}</div>
+                            <div class="text-[11px] text-slate-400">${o.phone}</div>
+                        </td>
+                        <td class="p-3">
+                            <div>${o.material} (${o.color})</div>
+                            <div class="text-[11px] text-slate-400">${o.weight}g | ${o.qty} pcs</div>
+                            ${extraText}
+                        </td>
+                        <td class="p-3">
+                            <div class="flex items-center gap-1 min-w-[130px]">
+                                <input type="number" min="0" step="0.1" id="orderWeight_${o.id}" value="${Number(o.weight) || 0}" aria-label="Berat aktual dalam gram untuk ${o.id}" class="w-20 bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-semibold">
+                                <span class="text-[10px] text-slate-500">g</span>
+                            </div>
+                        </td>
+                        <td class="p-3">
+                            <div class="flex items-center gap-1 min-w-[150px]">
+                                <span class="text-slate-500">Rp</span>
+                                <input type="number" min="0" step="1" id="orderSellGram_${o.id}" value="${orderSellGram}" aria-label="Harga jual per gram untuk ${o.id}" class="w-24 bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-semibold">
+                                <button onclick="saveOrderGramPrice('${o.id}')" class="px-2 py-1 bg-lumen-50 hover:bg-lumen-100 text-lumen-700 rounded-lg font-bold" title="Simpan berat dan harga">Simpan</button>
+                            </div>
+                            <span class="text-[10px] text-slate-400">/ gram</span>
+                        </td>
+                        <td class="p-3 font-bold text-slate-900">Rp ${(o.total || 0).toLocaleString('id-ID')}</td>
+                        <td class="p-3">
+                            <select onchange="updateOrderStatusDirectly('${o.id}', this.value)" class="bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold uppercase">
+                                <option value="QUEUE" ${o.status==='QUEUE'?'selected':''}>QUEUE / WAITING</option>
+                                <option value="CHECK_ADMIN" ${o.status==='CHECK_ADMIN'?'selected':''}>CHECK ADMIN</option>
+                                <option value="DESIGN" ${o.status==='DESIGN'?'selected':''}>PROSES DESAIN</option>
+                                <option value="PRINTING" ${o.status==='PRINTING'?'selected':''}>PRINTING</option>
+                                <option value="QC" ${o.status==='QC'?'selected':''}>QC</option>
+                                <option value="READY" ${o.status==='READY'?'selected':''}>READY</option>
+                                <option value="COMPLETED" ${o.status==='COMPLETED'?'selected':''}>COMPLETED</option>
+                            </select>
+                        </td>
+                        <td class="p-3">
+                            <div class="flex items-center gap-1">
+                                <button onclick="openEditOrderModal('${o.id}')" class="p-1.5 bg-lumen-50 hover:bg-lumen-100 text-lumen-700 rounded-lg"><i class='bx bx-edit text-base'></i></button>
+                                <button onclick="openInvoiceModal('${o.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg"><i class='bx bx-receipt text-base'></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            const kanbanStages = [
+                { status: 'QUEUE', countId: 'countQueue', columnId: 'kanbanQueue' },
+                { status: 'CHECK_ADMIN', countId: 'countCheckAdmin', columnId: 'kanbanCheckAdmin' },
+                { status: 'DESIGN', countId: 'countDesign', columnId: 'kanbanDesign' },
+                { status: 'PRINTING', countId: 'countPrinting', columnId: 'kanbanPrinting' },
+                { status: 'QC', countId: 'countQC', columnId: 'kanbanQC' },
+                { status: 'READY', countId: 'countReady', columnId: 'kanbanReady' }
+            ];
+            kanbanStages.forEach(stage => {
+                const filtered = state.orders.filter(order => {
+                    const status = normalizeOrderStatus(order.status);
+                    return stage.status === 'READY' ? ['READY', 'COMPLETED'].includes(status) : status === stage.status;
+                });
+                const countElem = document.getElementById(stage.countId);
+                const colElem = document.getElementById(stage.columnId);
+                if (countElem) countElem.innerText = filtered.length;
+                if (colElem) {
+                    colElem.innerHTML = filtered.map(o => `
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3 hover:shadow-md transition">
+                            <div class="flex justify-between items-start gap-2">
+                                <div>
+                                    <div class="font-bold text-sm text-slate-800">${o.id}</div>
+                                    <div class="text-[11px] text-slate-500 mt-1">${o.name}</div>
+                                </div>
+                                <span class="text-xs font-bold text-blue-600 whitespace-nowrap">Rp ${(o.total||0).toLocaleString('id-ID')}</span>
+                            </div>
+                            <div class="bg-slate-50 rounded-lg p-2.5 text-xs space-y-1.5">
+                                <div class="flex justify-between"><span class="text-slate-500">Material</span><span class="font-semibold text-slate-700">${o.material || '-'}</span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">Quantity</span><span class="font-semibold text-slate-700">${o.qty || 0} pcs</span></div>
+                            </div>
+                            <div class="flex items-center gap-2 pt-1">
+                                <select onchange="updateOrderStatusDirectly('${o.id}', this.value)" class="flex-1 bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-[11px] font-bold uppercase">
+                                    <option value="QUEUE" ${o.status==='QUEUE'?'selected':''}>QUEUE / WAITING</option>
+                                    <option value="CHECK_ADMIN" ${o.status==='CHECK_ADMIN'?'selected':''}>CHECK ADMIN</option>
+                                    <option value="DESIGN" ${o.status==='DESIGN'?'selected':''}>PROSES DESAIN</option>
+                                    <option value="PRINTING" ${o.status==='PRINTING'?'selected':''}>PRINTING</option>
+                                    <option value="QC" ${o.status==='QC'?'selected':''}>QC</option>
+                                    <option value="READY" ${o.status==='READY'?'selected':''}>READY</option>
+                                    <option value="COMPLETED" ${o.status==='COMPLETED'?'selected':''}>COMPLETED</option>
+                                </select>
+                                <button onclick="openEditOrderModal('${o.id}')" class="p-1.5 bg-lumen-50 hover:bg-lumen-100 text-lumen-700 rounded-lg"><i class='bx bx-edit text-base'></i></button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            });
+
+            const filBody = document.getElementById('adminFilamentTableBody');
+            filBody.innerHTML = state.materials.map(m => `
+                <tr>
+                    <td class="p-3 font-bold text-slate-800">${m.name}</td>
+                    <td class="p-3">${m.density} g/cm³</td>
+                    <td class="p-3">Rp ${(m.costGram||0).toLocaleString('id-ID')}</td>
+                    <td class="p-3 font-semibold text-emerald-700">Rp ${(m.sellGram||0).toLocaleString('id-ID')}</td>
+                    <td class="p-3">${m.stockKg} KG</td>
+                    <td class="p-3 text-right">
+                        <button onclick="openFilamentModal('${m.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg"><i class='bx bx-edit text-base'></i></button>
+                        <button onclick="deleteFilament('${m.id}')" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100"><i class='bx bx-trash text-base'></i></button>
+                    </td>
+                </tr>
+            `).join('');
+
+            const prGrid = document.getElementById('printerGrid');
+            prGrid.innerHTML = state.printers.map(p => `
+                <div class="bento-card p-4 space-y-2 text-xs">
+                    <div class="flex justify-between items-center font-bold">
+                        <span class="text-sm text-slate-900">${p.name}</span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] ${p.status==='PRINTING'?'bg-blue-100 text-blue-800':'bg-slate-100 text-slate-700'}">${p.status}</span>
+                    </div>
+                    <div class="text-slate-500">Job: <span class="font-semibold text-slate-800">${p.currentJob||'-'}</span></div>
+                    <div class="flex gap-1 pt-2">
+                        <button onclick="openPrinterModal('${p.id}')" class="flex-1 btn-secondary py-1 text-[11px]">Edit</button>
+                        <button onclick="deletePrinter('${p.id}')" class="p-1 bg-rose-50 text-rose-600 rounded-lg"><i class='bx bx-trash text-base'></i></button>
+                    </div>
+                </div>
+            `).join('');
+
+            renderRevenueReport();
+        }
+
+        function updateReportPeriodInput() {
+            const period = document.getElementById('reportPeriod');
+            const input = document.getElementById('reportDate');
+            const label = document.getElementById('reportDateLabel');
+            if (!period || !input || !label) return;
+
+            const now = new Date();
+            if (period.value === 'day') {
+                input.type = 'date';
+                label.innerText = 'Pilih Tanggal';
+                input.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            } else if (period.value === 'year') {
+                input.type = 'number';
+                input.min = '2000';
+                input.max = '2100';
+                input.step = '1';
+                input.value = String(now.getFullYear());
+                label.innerText = 'Pilih Tahun';
+            } else {
+                input.type = 'month';
+                input.removeAttribute('min');
+                input.removeAttribute('max');
+                input.removeAttribute('step');
+                input.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                label.innerText = 'Pilih Bulan';
+            }
+        }
+
+        function escapeReportText(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[char]);
+        }
+
+        function renderRevenueReport() {
+            const tbody = document.getElementById('revenueReportBody');
+            if (!tbody) return;
+
+            const period = document.getElementById('reportPeriod').value;
+            if (!document.getElementById('reportDate').value) updateReportPeriodInput();
+            const selected = document.getElementById('reportDate').value;
+            const filteredOrders = state.orders.filter(order => {
+                const dateKey = getOrderDateKey(order);
+                if (!dateKey) return false;
+                if (period === 'day') return dateKey === selected.replace(/-/g, '');
+                if (period === 'year') return dateKey.slice(0, 4) === selected;
+                return dateKey.slice(0, 6) === selected.replace(/-/g, '');
+            });
+
+            let revenue = 0;
+            let profit = 0;
+            const rows = filteredOrders.map(order => {
+                const orderRevenue = Number(order.total) || 0;
+                const material = state.materials.find(item => item.name === order.material);
+                const materialCost = material ? (Number(order.weight) || 0) * (Number(material.costGram) || 0) : 0;
+                const machineCost = (Number(order.weight) || 0) * 0.08 * 3500;
+                const orderProfit = orderRevenue - materialCost - machineCost;
+                revenue += orderRevenue;
+                profit += orderProfit;
+
+                const rawDate = order.date || '';
+                const displayDate = rawDate || getOrderDateKey(order);
+                return `<tr>
+                    <td class="p-3 whitespace-nowrap">${escapeReportText(displayDate)}</td>
+                    <td class="p-3"><span class="font-semibold text-slate-800">${escapeReportText(order.id)}</span><span class="block text-slate-500">${escapeReportText(order.name)}</span></td>
+                    <td class="p-3">${escapeReportText(order.status)}</td>
+                    <td class="p-3 text-right font-semibold">Rp ${orderRevenue.toLocaleString('id-ID')}</td>
+                    <td class="p-3 text-right font-semibold ${orderProfit >= 0 ? 'text-emerald-700' : 'text-rose-600'}">Rp ${Math.round(orderProfit).toLocaleString('id-ID')}</td>
+                </tr>`;
+            });
+
+            document.getElementById('reportRevenue').innerText = `Rp ${Math.round(revenue).toLocaleString('id-ID')}`;
+            document.getElementById('reportProfit').innerText = `Rp ${Math.round(profit).toLocaleString('id-ID')}`;
+            document.getElementById('reportOrderCount').innerText = filteredOrders.length.toLocaleString('id-ID');
+            tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="5" class="p-5 text-center text-slate-400">Tidak ada order pada periode ini.</td></tr>';
+        }
+
+        let currentExtraItems = [];
+
+        function openEditOrderModal(orderId) {
+            const order = state.orders.find(o => o.id === orderId);
+            if (!order) return;
+
+            document.getElementById('editOrderId').value = order.id;
+            document.getElementById('editModalOrderNum').innerText = order.id;
+            const material = state.materials.find(item => item.name === order.material);
+            document.getElementById('editActualWeight').value = Number(order.weight) || 0;
+            document.getElementById('editSellGram').value = Number(order.sellGram) || Number(material?.sellGram) || 0;
+            document.getElementById('editOrderStatus').value = order.status;
+
+            currentExtraItems = order.additionalItems ? [...order.additionalItems] : [];
+            renderExtraItemsRows();
+            calculateEditModalTotal();
+
+            document.getElementById('editOrderModal').classList.remove('hidden');
+        }
+
+        function closeEditOrderModal() {
+            document.getElementById('editOrderModal').classList.add('hidden');
+        }
+
+        function addExtraItemRow(title = '', price = 0) {
+            currentExtraItems.push({ title, price });
+            renderExtraItemsRows();
+            calculateEditModalTotal();
+        }
+
+        function addPresetExtraItem(title, price) {
+            addExtraItemRow(title, price);
+        }
+
+        function removeExtraItemRow(idx) {
+            currentExtraItems.splice(idx, 1);
+            renderExtraItemsRows();
+            calculateEditModalTotal();
+        }
+
+        function renderExtraItemsRows() {
+            const container = document.getElementById('extraItemsContainer');
+            container.innerHTML = currentExtraItems.map((item, idx) => `
+                <div class="flex items-center gap-2">
+                    <input type="text" placeholder="Nama Layanan / Item Extra" value="${item.title}" onchange="currentExtraItems[${idx}].title = this.value" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs">
+                    <input type="number" placeholder="Biaya (Rp)" value="${item.price}" oninput="currentExtraItems[${idx}].price = Number(this.value); calculateEditModalTotal();" class="w-28 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold">
+                    <button type="button" onclick="removeExtraItemRow(${idx})" class="p-1 text-rose-500 hover:text-rose-700 text-base"><i class='bx bx-trash'></i></button>
+                </div>
+            `).join('');
+        }
+
+        function calculateEditModalTotal() {
+            const orderId = document.getElementById('editOrderId').value;
+            const order = state.orders.find(item => item.id === orderId);
+            const sellGram = Math.max(0, Number(document.getElementById('editSellGram').value) || 0);
+            const weight = Math.max(0, Number(document.getElementById('editActualWeight').value) || 0);
+            const materialCost = Math.round(weight * sellGram);
+            const machineCost = Math.round(weight * 0.08 * 3500);
+            const basePrice = materialCost + machineCost;
+            const extraTotal = currentExtraItems.reduce((acc, curr) => acc + (Number(curr.price) || 0), 0);
+            const total = basePrice + extraTotal;
+
+            document.getElementById('editBasePrice').value = basePrice;
+            document.getElementById('editBasePriceDisplay').innerText = `Rp ${basePrice.toLocaleString('id-ID')}`;
+            document.getElementById('editModalCalculatedTotal').innerText = `Rp ${total.toLocaleString('id-ID')}`;
+        }
+
+        async function saveOrderEdits(e) {
+            e.preventDefault();
+            const orderId = document.getElementById('editOrderId').value;
+            const order = state.orders.find(o => o.id === orderId);
+            if (!order) return;
+
+            const sellGram = Math.max(0, Number(document.getElementById('editSellGram').value) || 0);
+            const weight = Math.max(0, Number(document.getElementById('editActualWeight').value) || 0);
+            const previousOrder = { ...order, additionalItems: [...(order.additionalItems || [])] };
+            const basePrice = Number(document.getElementById('editBasePrice').value) || 0;
+            const status = document.getElementById('editOrderStatus').value;
+            const extraTotal = currentExtraItems.reduce((acc, curr) => acc + (Number(curr.price) || 0), 0);
+            const total = basePrice + extraTotal;
+
+            order.weight = weight;
+            order.sellGram = sellGram;
+            order.basePrice = basePrice;
+            order.additionalItems = [...currentExtraItems];
+            order.total = total;
+            order.status = status;
+
+            renderAdminData();
+            closeEditOrderModal();
+            showToast(`Menyimpan perubahan Nota ${orderId}...`);
+
+            const response = await callBackendAPI('SAVE_ORDER_EDITS', {
+                id: orderId,
+                weight: weight,
+                sellGram: sellGram,
+                basePrice: basePrice,
+                additionalItems: currentExtraItems,
+                total: total,
+                status: status
+            });
+
+            if (!response || response.status !== 'success') {
+                Object.assign(order, previousOrder);
+                renderAdminData();
+                showToast(`Gagal menyimpan nota ${orderId} ke Google Sheets.`);
+                return;
+            }
+            showToast(`Nota ${orderId} tersimpan di Google Sheets!`);
+        }
+
+        function openFilamentModal(matId = null) {
+            if (matId) {
+                const mat = state.materials.find(m => m.id === matId);
+                if (!mat) return;
+                document.getElementById('filamentModalTitle').innerText = 'Edit Material Filament';
+                document.getElementById('filamentId').value = mat.id;
+                document.getElementById('filamentName').value = mat.name;
+                document.getElementById('filamentDensity').value = mat.density;
+                document.getElementById('filamentCost').value = mat.costGram;
+                document.getElementById('filamentSell').value = mat.sellGram;
+                document.getElementById('filamentStock').value = mat.stockKg;
+            } else {
+                document.getElementById('filamentModalTitle').innerText = 'Tambah Material Filament';
+                document.getElementById('filamentForm').reset();
+                document.getElementById('filamentId').value = '';
+            }
+            document.getElementById('filamentModal').classList.remove('hidden');
+        }
+
+        function closeFilamentModal() {
+            document.getElementById('filamentModal').classList.add('hidden');
+        }
+
+        async function saveFilament(e) {
+            e.preventDefault();
+            const id = document.getElementById('filamentId').value;
+            const name = document.getElementById('filamentName').value;
+            const density = Number(document.getElementById('filamentDensity').value);
+            const costGram = Number(document.getElementById('filamentCost').value);
+            const sellGram = Number(document.getElementById('filamentSell').value);
+            const stockKg = Number(document.getElementById('filamentStock').value);
+
+            const payload = { id: id || `m_${Date.now()}`, name, density, costGram, sellGram, stockKg };
+
+            if (id) {
+                const idx = state.materials.findIndex(m => m.id === id);
+                if (idx !== -1) state.materials[idx] = payload;
+            } else {
+                state.materials.push(payload);
+            }
+
+            populateMaterialDropdowns();
+            renderAdminData();
+            closeFilamentModal();
+            showToast('Menyimpan material...');
+
+            await callBackendAPI('SAVE_FILAMENT', payload);
+            showToast('Material berhasil tersimpan!');
+        }
+
+        async function deleteFilament(id) {
+            if (!confirm('Hapus material ini?')) return;
+            state.materials = state.materials.filter(m => m.id !== id);
+            populateMaterialDropdowns();
+            renderAdminData();
+            await callBackendAPI('DELETE_FILAMENT', { id });
+            showToast('Material terhapus.');
+        }
+
+        function openPrinterModal(pId = null) {
+            if (pId) {
+                const p = state.printers.find(pr => pr.id === pId);
+                if (!p) return;
+                document.getElementById('printerModalTitle').innerText = 'Edit Unit Printer';
+                document.getElementById('printerId').value = p.id;
+                document.getElementById('printerName').value = p.name;
+                document.getElementById('printerStatus').value = p.status;
+                document.getElementById('printerJob').value = p.currentJob || '-';
+            } else {
+                document.getElementById('printerModalTitle').innerText = 'Tambah Unit Printer';
+                document.getElementById('printerForm').reset();
+                document.getElementById('printerId').value = '';
+            }
+            document.getElementById('printerModal').classList.remove('hidden');
+        }
+
+        function closePrinterModal() {
+            document.getElementById('printerModal').classList.add('hidden');
+        }
+
+        async function savePrinter(e) {
+            e.preventDefault();
+            const id = document.getElementById('printerId').value;
+            const name = document.getElementById('printerName').value;
+            const status = document.getElementById('printerStatus').value;
+            const currentJob = document.getElementById('printerJob').value || '-';
+
+            const payload = { id: id || `p_${Date.now()}`, name, status, currentJob };
+
+            if (id) {
+                const idx = state.printers.findIndex(p => p.id === id);
+                if (idx !== -1) state.printers[idx] = payload;
+            } else {
+                state.printers.push(payload);
+            }
+
+            renderAdminData();
+            closePrinterModal();
+            showToast('Menyimpan data printer...');
+
+            await callBackendAPI('SAVE_PRINTER', payload);
+            showToast('Printer berhasil tersimpan!');
+        }
+
+        async function deletePrinter(id) {
+            if (!confirm('Hapus printer ini?')) return;
+            state.printers = state.printers.filter(p => p.id !== id);
+            renderAdminData();
+            await callBackendAPI('DELETE_PRINTER', { id });
+            showToast('Printer terhapus.');
+        }
+
+        async function saveAdminSettings() {
+            const payload = {
+                brandName: document.getElementById('settingBrandName').value,
+                logoUrl: document.getElementById('settingLogoUrl').value,
+                address: document.getElementById('settingAddress').value,
+                wa: document.getElementById('settingWA').value,
+                mapsUrl: document.getElementById('settingMapsUrl').value
+            };
+
+            state.settings = { ...state.settings, ...payload };
+            applySettingsToUI();
+            showToast('Menyimpan Pengaturan & Branding...');
+
+            await callBackendAPI('SAVE_SETTINGS', payload);
+            showToast('Pengaturan Branding tersimpan ke Google Sheets!');
+        }
+
+        function printInvoice() {
+            const paper = document.getElementById('invoicePaper');
+            const content = document.getElementById('invoiceContent');
+            if (!paper || !content) return;
+
+            const printableHeight = (148 - 14) * 96 / 25.4;
+            const fittedScale = Math.min(1, printableHeight / Math.max(content.scrollHeight * 1.04, 1));
+            paper.style.setProperty('--invoice-print-scale', fittedScale.toFixed(3));
+            window.addEventListener('afterprint', () => paper.style.removeProperty('--invoice-print-scale'), { once: true });
+            window.print();
+        }
+
+        function openInvoiceModal(orderId) {
+            const order = state.orders.find(o => o.id === orderId);
+            if (!order) return;
+
+            document.getElementById('invNum').innerText = order.id;
+            document.getElementById('invDate').innerText = order.date || new Date().toLocaleDateString('id-ID');
+            document.getElementById('invCustName').innerText = order.name;
+            document.getElementById('invCustPhone').innerText = order.phone;
+            document.getElementById('invCustAddress').innerText = order.address;
+            document.getElementById('invPayStatus').innerText = `STATUS: ${order.status}`;
+
+            const tbody = document.getElementById('invItemsBody');
+            let itemsHtml = `
+                <tr>
+                    <td class="py-1">Cetak 3D Model: ${order.material} (${order.color}) - ${order.weight}g</td>
+                    <td class="py-1 text-center">${order.qty}</td>
+                    <td class="py-1 text-right">Rp ${(order.basePrice || order.total).toLocaleString('id-ID')}</td>
+                </tr>
+            `;
+
+            if (order.additionalItems && order.additionalItems.length > 0) {
+                itemsHtml += order.additionalItems.map(it => `
+                    <tr>
+                        <td class="py-1">${it.title}</td>
+                        <td class="py-1 text-center">1</td>
+                        <td class="py-1 text-right">Rp ${Number(it.price).toLocaleString('id-ID')}</td>
+                    </tr>
+                `).join('');
+            }
+
+            tbody.innerHTML = itemsHtml;
+            document.getElementById('invTotalAmount').innerText = `Rp ${order.total.toLocaleString('id-ID')}`;
+            const tanggalNota = order.date
+                ? new Date(order.date).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                })
+                : new Date().toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+            const extraLines = (order.additionalItems || []).map(item => `- ${item.title}: Rp ${Number(item.price || 0).toLocaleString('id-ID')}`);
+            const invoiceMessage = [
+                `Halo ${order.name}, berikut rincian nota dari ${state.settings.brandName}.`,
+                `No. Nota: ${order.id}`,
+                `Tanggal: ${{tanggalNota}}`,
+                `Pesanan: Cetak 3D ${order.material} (${order.color}), ${order.qty} pcs (${order.weight} g)`,
+                ...extraLines,
+                `Total pembayaran: Rp ${Number(order.total || 0).toLocaleString('id-ID')}`,
+                `Status: ${order.status}`,
+                'Terima kasih telah menggunakan layanan kami.'
+            ].join('\n');
+            let recipient = String(order.phone || state.settings.wa || '').replace(/\D/g, '').replace(/^0/, '62');
+            if (recipient.startsWith('8')) recipient = `62${recipient}`;
+            document.getElementById('btnSendNotaWA').href = `https://wa.me/${recipient}?text=${encodeURIComponent(invoiceMessage)}`;
+
+            document.getElementById('invoiceModal').classList.remove('hidden');
+        }
+
+        function openInvoiceModalFromTrack() {
+            const query = document.getElementById('trackOrderNum').value.trim().toLowerCase();
+            const order = state.orders.find(item =>
+                item.id.toLowerCase() === query ||
+                item.name.toLowerCase() === query ||
+                item.phone === query
+            );
+            if (order) openInvoiceModal(order.id);
+        }
+
+        function closeInvoiceModal() {
+            document.getElementById('invoiceModal').classList.add('hidden');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            init3DViewer();
+            fetchInitialData();
+        });
+    </script>
+</body>
+</html>
