@@ -119,6 +119,20 @@
             #invoiceActions { display: none !important; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
+                .viewer-vignette {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 5;
+
+            background: radial-gradient(
+                ellipse at center,
+                transparent 40%,
+                rgba(15, 23, 42, 0.04) 60%,
+                rgba(15, 23, 42, 0.18) 82%,
+                rgba(15, 23, 42, 0.32) 100%
+            );
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
@@ -229,9 +243,9 @@
                     <div class="bento-card p-6 space-y-4">
                         <div class="flex items-center justify-between">
                             <h3 class="font-bold text-lg text-slate-900 flex items-center gap-2">
-                                <i class='bx bx-calculator text-lumen-600'></i> Instant Price Calculator
+                                <i class='bx bx-calculator text-lumen-600'></i> 3D Print Estimator
                             </h3>
-                            <span class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded-full">Live Estimate</span>
+                            <span class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded-full">Estimasi Biaya</span>
                         </div>
 
                         <div class="space-y-3">
@@ -277,7 +291,7 @@
                                     <i class='bx bx-info-circle text-base text-amber-600'></i> Catatan Penting
                                 </div>
                                 <p class="text-[11px] leading-snug">
-                                    Harga di atas merupakan estimasi perkiraan otomatis sistem. Untuk harga final, jasa desain 3D, diskon kuantitas, dan penyesuaian khusus, <strong>silahkan konfirmasi dengan admin.</strong>
+                                    Harga di atas merupakan estimasi perkiraan otomatis bukan harga final. Untuk informasi harga cetak, jasa desain 3D, diskon kuantitas, dan penyesuaian khusus, <strong>silahkan konfirmasi dengan admin.</strong>
                                 </p>
                             </div>
 
@@ -396,11 +410,11 @@
                     <div class="bg-slate-100 p-4 rounded-xl border border-slate-200 space-y-2">
                         <div class="flex justify-between text-sm">
                             <span class="text-slate-600">Total Berat Estimasi:</span>
-                            <span class="font-bold text-slate-800" id="orderEstWeight">15.5 Gram</span>
+                            <span class="font-bold text-slate-800" id="orderEstWeight">0</span>
                         </div>
                         <div class="flex justify-between text-sm">
                             <span class="text-slate-600">Estimasi Biaya Cetak Base:</span>
-                            <span class="font-extrabold text-lg text-lumen-600" id="orderEstTotal">Rp 16.600</span>
+                            <span class="font-extrabold text-lg text-lumen-600" id="orderEstTotal">0</span>
                         </div>
                         <p class="text-[11px] text-amber-700 bg-amber-50 p-2 rounded border border-amber-200 font-medium">
                             *Note: Biaya akhir termasuk penambahan Jasa Desain 3D / Finishing akan disesuaikan dan dikonfirmasi oleh Admin pada Nota Invoice.
@@ -1157,9 +1171,22 @@
             const canvas = document.getElementById('threeCanvas');
 
             scene = new THREE.Scene();
+
             scene.background = new THREE.Color(0x0f172a);
 
-            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            // Fade objek/grid semakin jauh dari kamera
+            scene.fog = new THREE.Fog(
+                0x0f172a,
+                100,
+                500
+            );
+
+            camera = new THREE.PerspectiveCamera(
+                45,
+                container.clientWidth / container.clientHeight,
+                0.1,
+                1000
+            );
             camera.position.set(45, 45, 45);
 
             renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
@@ -1177,17 +1204,245 @@
             dirLight1.position.set(50, 80, 50);
             scene.add(dirLight1);
 
-            const gridHelper = new THREE.GridHelper(100, 20, 0x0284c7, 0x1e293b);
+            const gridHelper = new THREE.GridHelper(
+                1000,
+                100,
+                0x0284c7,
+                0x1e293b
+            );
+
             gridHelper.position.y = -10;
+
             scene.add(gridHelper);
+            // ==========================================
+            // MODEL ANIMATION SYSTEM
+            // ==========================================
 
-            createDefaultGearModel();
+            let isUserControlling = false;
+            let isIdleAnimating = false;
+            let idleTimer = null;
+            let revealStartTime = null;
+            let isRevealing = false;
 
-            function animate() {
-                requestAnimationFrame(animate);
-                controls.update();
-                renderer.render(scene, camera);
+            const IDLE_DELAY = 0;
+            const IDLE_SPEED = 0.5;
+            const REVEAL_DURATION = 3500;
+
+
+            // ==========================================
+            // REVEAL MODEL
+            // ==========================================
+
+            function revealModel() {
+                if (!mesh) return;
+
+                isRevealing = true;
+                revealStartTime = performance.now();
+
+                clearTimeout(idleTimer);
+                isIdleAnimating = false;
+
+                // Simpan rotasi asli
+                mesh.userData.revealRotation = {
+                    x: mesh.rotation.x,
+                    y: mesh.rotation.y,
+                    z: mesh.rotation.z
+                };
+
+                // Mulai kecil
+                mesh.scale.set(0.05, 0.05, 0.05);
+
+                // Posisi awal reveal 3-axis
+                mesh.rotation.x =
+                    mesh.userData.revealRotation.x - Math.PI * 0.35;
+
+                mesh.rotation.y =
+                    mesh.userData.revealRotation.y - Math.PI * 0.75;
+
+                mesh.rotation.z =
+                    mesh.userData.revealRotation.z - Math.PI * 0.20;
             }
+
+
+            // ==========================================
+            // IDLE TIMER
+            // ==========================================
+
+            function resetIdleTimer() {
+                clearTimeout(idleTimer);
+
+                isIdleAnimating = false;
+
+                idleTimer = setTimeout(() => {
+                    if (!isUserControlling && !isRevealing) {
+                        isIdleAnimating = true;
+                    }
+                }, IDLE_DELAY);
+            }
+
+
+            // ==========================================
+            // USER CONTROL
+            // ==========================================
+
+            controls.addEventListener('start', () => {
+                isUserControlling = true;
+                isIdleAnimating = false;
+
+                clearTimeout(idleTimer);
+            });
+
+            controls.addEventListener('end', () => {
+                isUserControlling = false;
+
+                resetIdleTimer();
+            });
+            createDefaultGearModel();
+                function animate() {
+                    requestAnimationFrame(animate);
+
+                    const now = performance.now();
+
+
+                    // ==========================================
+                    // REVEAL ANIMATION 3-AXIS
+                    // ==========================================
+
+                    if (isRevealing && mesh && revealStartTime !== null) {
+
+                        const elapsed = now - revealStartTime;
+
+                        let progress = Math.min(
+                            elapsed / REVEAL_DURATION,
+                            1
+                        );
+
+                        // Ease Out Cubic
+                        const eased =
+                            1 - Math.pow(1 - progress, 3);
+
+
+                        // --------------------------------------
+                        // SCALE
+                        // --------------------------------------
+
+                        const scale =
+                            0.05 + (0.95 * eased);
+
+                        mesh.scale.set(
+                            scale,
+                            scale,
+                            scale
+                        );
+
+
+                        // --------------------------------------
+                        // ROTATION X
+                        // --------------------------------------
+
+                        const startX =
+                            mesh.userData.revealRotation.x -
+                            Math.PI * 0.35;
+
+                        mesh.rotation.x =
+                            startX +
+                            (
+                                mesh.userData.revealRotation.x -
+                                startX
+                            ) * eased;
+
+
+                        // --------------------------------------
+                        // ROTATION Y
+                        // --------------------------------------
+
+                        const startY =
+                            mesh.userData.revealRotation.y -
+                            Math.PI * 0.75;
+
+                        mesh.rotation.y =
+                            startY +
+                            (
+                                mesh.userData.revealRotation.y -
+                                startY
+                            ) * eased;
+
+
+                        // --------------------------------------
+                        // ROTATION Z
+                        // --------------------------------------
+
+                        const startZ =
+                            mesh.userData.revealRotation.z -
+                            Math.PI * 0.20;
+
+                        mesh.rotation.z =
+                            startZ +
+                            (
+                                mesh.userData.revealRotation.z -
+                                startZ
+                            ) * eased;
+
+
+                        // --------------------------------------
+                        // REVEAL SELESAI
+                        // --------------------------------------
+
+                        if (progress >= 1) {
+
+                            isRevealing = false;
+
+                            mesh.scale.set(1, 1, 1);
+
+                            mesh.rotation.x =
+                                mesh.userData.revealRotation.x;
+
+                            mesh.rotation.y =
+                                mesh.userData.revealRotation.y;
+
+                            mesh.rotation.z =
+                                mesh.userData.revealRotation.z;
+
+                            resetIdleTimer();
+                        }
+                    }
+
+
+                    // ==========================================
+                    // IDLE ROTATION
+                    // ==========================================
+
+                    if (
+                        isIdleAnimating &&
+                        !isUserControlling &&
+                        !isRevealing &&
+                        mesh
+                    ) {
+
+                        // Rotasi utama
+                        mesh.rotation.y +=
+                            IDLE_SPEED * 0.01;
+
+                        // Gerakan X sangat kecil
+                        mesh.rotation.x +=
+                            Math.sin(now * 0.0008) * 0.00015;
+
+                        // Sway Z
+                        mesh.rotation.z =
+                            Math.sin(now * 0.0006) * 0.025;
+                    }
+
+
+                    // ==========================================
+                    // RENDER
+                    // ==========================================
+
+                    controls.update();
+                    renderer.render(scene, camera);
+                }
+            // Reveal model pertama
+            revealModel();
+
             animate();
 
             window.addEventListener('resize', () => {
@@ -1199,12 +1454,94 @@
         }
 
         function createDefaultGearModel() {
-            if (mesh) scene.remove(mesh);
-            const geometry = new THREE.CylinderGeometry(15, 15, 10, 20);
-            const material = new THREE.MeshPhongMaterial({ color: 0x0284c7, specular: 0x222222, shininess: 30, wireframe: isWireframe });
-            mesh = new THREE.Mesh(geometry, material);
-            scene.add(mesh);
+
+    // Hapus model sebelumnya
+    if (mesh) {
+        scene.remove(mesh);
+
+        if (mesh.geometry) mesh.geometry.dispose();
+        if (mesh.material) mesh.material.dispose();
+    }
+
+    // ==========================================
+    // BENTUK BINTANG
+    // ==========================================
+
+    const shape = new THREE.Shape();
+
+    const outerRadius = 15;
+    const innerRadius = 7;
+    const points = 5;
+
+    for (let i = 0; i < points * 2; i++) {
+
+        const angle =
+            (i / (points * 2)) * Math.PI * 2
+            - Math.PI / 2;
+
+        const radius =
+            i % 2 === 0
+                ? outerRadius
+                : innerRadius;
+
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius;
+
+        if (i === 0) {
+            shape.moveTo(x, y);
+        } else {
+            shape.lineTo(x, y);
         }
+    }
+
+    shape.closePath();
+
+    // ==========================================
+    // EXTRUDE MENJADI 3D
+    // ==========================================
+
+    const geometry = new THREE.ExtrudeGeometry(
+        shape,
+        {
+            depth: 5,
+            bevelEnabled: true,
+            bevelSegments: 6,
+            bevelSize: 0.8,
+            bevelThickness: 0.8,
+            curveSegments: 8
+        }
+    );
+
+    geometry.center();
+
+    // ==========================================
+    // MATERIAL
+    // ==========================================
+
+    const material = new THREE.MeshPhongMaterial({
+        color: 0x0284c7,
+        specular: 0x222222,
+        shininess: 35,
+        wireframe: isWireframe
+    });
+
+    mesh = new THREE.Mesh(
+        geometry,
+        material
+    );
+
+    scene.add(mesh);
+
+    // ==========================================
+    // ROTASI AWAL
+    // ==========================================
+
+    mesh.rotation.x = THREE.MathUtils.degToRad(20);
+    mesh.rotation.y = THREE.MathUtils.degToRad(-25);
+    mesh.rotation.z = THREE.MathUtils.degToRad(10);
+
+    mesh.position.set(0, 0, 0);
+}
 
         function reset3DCamera() {
             camera.position.set(45, 45, 45);
@@ -1283,27 +1620,105 @@
 
         function recalculatePrice() {
             const matSelect = document.getElementById('calcMaterial');
-            if (!matSelect || matSelect.options.length === 0) return;
+    if (!matSelect || matSelect.options.length === 0) return;
 
-            const mat = state.materials.find(m => m.id === matSelect.value) || state.materials[0];
-            const infill = parseInt(document.getElementById('calcInfill').value) || 20;
-            const qty = parseInt(document.getElementById('calcQty').value) || 1;
+    const mat = state.materials.find(m => m.id === matSelect.value) || state.materials[0];
 
-            const estWeight = (state.currentModelVolume * mat.density * (0.3 + (infill / 100) * 0.7) * qty).toFixed(1);
-            const estTime = (estWeight * 0.08).toFixed(1);
+    const infill = parseInt(document.getElementById('calcInfill').value) || 20;
+    const qty = parseInt(document.getElementById('calcQty').value) || 1;
 
-            document.getElementById('statWeight').innerText = `${estWeight} gram`;
-            document.getElementById('statTime').innerText = `~${estTime} Jam`;
+    // ==========================================
+    // VOLUME STL
+    // currentModelVolume SUDAH dalam cm³
+    // ==========================================
+    const volumeCm3 = state.currentModelVolume;
 
-            const matCost = Math.round(estWeight * mat.sellGram);
-            const machineCost = Math.round(estTime * 3500);
-            const total = matCost + machineCost;
+    // ==========================================
+    // ESTIMASI MATERIAL
+    // 30% = wall + top + bottom
+    // 70% = infill
+    // ==========================================
+    const materialFactor = 0.30 + ((infill / 100) * 0.70);
 
-            document.getElementById('calcMatName').innerText = mat.name;
-            document.getElementById('priceMat').innerText = `Rp ${matCost.toLocaleString('id-ID')}`;
-            document.getElementById('priceMachine').innerText = `Rp ${machineCost.toLocaleString('id-ID')}`;
-            document.getElementById('priceTotal').innerText = `Rp ${total.toLocaleString('id-ID')}`;
-        }
+    // Berat dalam gram
+    const weight = volumeCm3 * mat.density * materialFactor * qty;
+
+    // ==========================================
+    // ESTIMASI WAKTU
+    // ==========================================
+    const time = weight * 0.08;
+
+    // ==========================================
+    // BIAYA
+    // ==========================================
+    const matCost = Math.round(weight * mat.sellGram);
+
+    // Biaya mesin Rp1.500 / jam
+    const machineRate = 1500;
+    const machineCost = Math.round(time * machineRate);
+
+    const total = matCost + machineCost;
+
+    // ==========================================
+    // DISPLAY
+    // ==========================================
+    document.getElementById('statWeight').innerText =
+        `${weight.toFixed(1)} gram`;
+
+    document.getElementById('statTime').innerText =
+        `~${time.toFixed(1)} Jam`;
+
+    document.getElementById('calcMatName').innerText =
+        mat.name;
+
+    document.getElementById('priceMat').innerText =
+        `Rp ${matCost.toLocaleString('id-ID')}`;
+
+    document.getElementById('priceMachine').innerText =
+        `Rp ${machineCost.toLocaleString('id-ID')}`;
+
+    document.getElementById('priceTotal').innerText =
+        `Rp ${total.toLocaleString('id-ID')}`;
+}
+
+
+function syncOrderCalculation() {
+    const matSelect = document.getElementById('orderMaterial');
+    if (!matSelect || matSelect.options.length === 0) return;
+
+    const mat = state.materials.find(m => m.id === matSelect.value) || state.materials[0];
+
+    const infill = parseInt(document.getElementById('orderInfill').value) || 20;
+    const qty = parseInt(document.getElementById('orderQty').value) || 1;
+
+    // currentModelVolume sudah dalam cm³
+    const volumeCm3 = state.currentModelVolume;
+
+    // Estimasi material
+    const materialFactor = 0.30 + ((infill / 100) * 0.70);
+
+    // Berat gram
+    const weight = volumeCm3 * mat.density * materialFactor * qty;
+
+    // Estimasi waktu
+    const time = weight * 0.08;
+
+    // Biaya filament
+    const matCost = Math.round(weight * mat.sellGram);
+
+    // Biaya mesin
+    const machineRate = 1500;
+    const machineCost = Math.round(time * machineRate);
+
+    // Total
+    const total = matCost + machineCost;
+
+    document.getElementById('orderEstWeight').innerText =
+        `${weight.toFixed(1)} Gram`;
+
+    document.getElementById('orderEstTotal').innerText =
+        `Rp ${total.toLocaleString('id-ID')}`;
+}
 
         function syncOrderCalculation() {
             const matSelect = document.getElementById('orderMaterial');
@@ -1314,7 +1729,7 @@
 
             const estWeight = (state.currentModelVolume * mat.density * (0.3 + (infill / 100) * 0.7) * qty).toFixed(1);
             const matCost = Math.round(estWeight * mat.sellGram);
-            const machineCost = Math.round((estWeight * 0.08) * 3500);
+            const machineCost = Math.round((estWeight * 0.08) * 1500);
             const total = matCost + machineCost;
 
             document.getElementById('orderEstWeight').innerText = `${estWeight} Gram`;
@@ -1579,7 +1994,7 @@
                 return;
             }
 
-            const basePrice = Math.round(weight * sellGram) + Math.round(weight * 0.08 * 3500);
+            const basePrice = Math.round(weight * sellGram) + Math.round(weight * 0.08 * 1500);
             const additionalItems = Array.isArray(order.additionalItems) ? order.additionalItems : [];
             const extraTotal = additionalItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
             const total = basePrice + extraTotal;
@@ -1804,7 +2219,7 @@
                 const orderRevenue = Number(order.total) || 0;
                 const material = state.materials.find(item => item.name === order.material);
                 const materialCost = material ? (Number(order.weight) || 0) * (Number(material.costGram) || 0) : 0;
-                const machineCost = (Number(order.weight) || 0) * 0.08 * 3500;
+                const machineCost = (Number(order.weight) || 0) * 0.08 * 1500;
                 const orderProfit = orderRevenue - materialCost - machineCost;
                 revenue += orderRevenue;
                 profit += orderProfit;
@@ -1883,7 +2298,7 @@
             const sellGram = Math.max(0, Number(document.getElementById('editSellGram').value) || 0);
             const weight = Math.max(0, Number(document.getElementById('editActualWeight').value) || 0);
             const materialCost = Math.round(weight * sellGram);
-            const machineCost = Math.round(weight * 0.08 * 3500);
+            const machineCost = Math.round(weight * 0.08 * 1500);
             const basePrice = materialCost + machineCost;
             const extraTotal = currentExtraItems.reduce((acc, curr) => acc + (Number(curr.price) || 0), 0);
             const total = basePrice + extraTotal;
