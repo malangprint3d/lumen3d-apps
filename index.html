@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LUMEN 3D Printing Services - Management & Ordering System</title>
+    <title>Printing Services - Management & Ordering System</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Boxicons -->
@@ -37,6 +37,31 @@
         .btn-primary:hover { background-color: #0369a1; }
         .btn-secondary { background-color: #f1f5f9; color: #334155; font-weight: 600; padding: 0.625rem 1.25rem; border-radius: 0.75rem; }
         .btn-secondary:hover { background-color: #e2e8f0; }
+        .nav-btn {
+            color: #475569;
+            transition: color 220ms ease, background-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+        }
+        .nav-btn:hover { color: #0369a1; }
+        .nav-btn.nav-btn-active {
+            color: #fff;
+            background: #0284c7;
+            box-shadow: 0 5px 14px rgba(2, 132, 199, 0.24);
+            animation: nav-select 260ms ease-out;
+        }
+        .nav-btn.nav-btn-active:hover { color: #fff; background: #0369a1; }
+        #adminAccessButton.bg-lumen-600,
+        #adminAccessButton.bg-lumen-600:hover {
+            color: #fff;
+            background-color: #0369a1;
+        }
+        @keyframes nav-select {
+            from { transform: translateY(2px) scale(0.97); }
+            to { transform: translateY(0) scale(1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .nav-btn { transition: none; }
+            .nav-btn.nav-btn-active { animation: none; }
+        }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
@@ -140,8 +165,8 @@
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
 
     <header class="bg-white/90 backdrop-blur border-b border-slate-200 sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3">
+        <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 min-h-16 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3 shrink-0">
                 <div id="mainLogoContainer" class="flex items-center justify-center">
                     <div class="w-10 h-10 rounded-xl bg-lumen-600 flex items-center justify-center text-white font-bold text-xl shadow-md" id="brandLogoIcon">
                         L
@@ -153,17 +178,16 @@
                 </div>
             </div>
 
-            <nav class="hidden md:flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-                <button onclick="switchTab('home')" id="nav-home" class="nav-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-slate-700 bg-white shadow-sm">Home & Preview</button>
-                <button onclick="switchTab('order')" id="nav-order" class="nav-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900">Mulai Order</button>
-                <button onclick="switchTab('track')" id="nav-track" class="nav-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900">Cek Order</button>
-                <button onclick="switchTab('admin')" id="nav-admin" class="nav-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900">Admin Portal</button>
+            <nav class="hidden md:flex flex-1 min-w-0 items-center justify-end gap-1">
+                <button onclick="switchTab('home')" id="nav-home" class="nav-btn nav-btn-active whitespace-nowrap px-2.5 lg:px-4 py-2 rounded-xl text-xs lg:text-sm font-semibold">Home & Preview</button>
+                <button onclick="switchTab('order')" id="nav-order" class="nav-btn whitespace-nowrap px-2.5 lg:px-4 py-2 rounded-xl text-xs lg:text-sm font-semibold">Mulai Order</button>
+                <button onclick="switchTab('track')" id="nav-track" class="nav-btn whitespace-nowrap px-2.5 lg:px-4 py-2 rounded-xl text-xs lg:text-sm font-semibold">Cek Order</button>
             </nav>
 
-            <div class="flex items-center gap-2">
-                <a id="btnQuickWA" target="_blank" class="hidden sm:inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-3.5 py-1.5 rounded-xl text-sm font-semibold shadow-sm transition">
-                    <i class='bx bxl-whatsapp text-lg'></i> Contact WA
-                </a>
+            <div class="flex items-center gap-2 shrink-0">
+                <button onclick="switchTab('admin')" id="adminAccessButton" class="hidden md:inline-flex items-center justify-center w-10 h-10 rounded-xl text-lumen-700 hover:text-lumen-700 hover:bg-lumen-50 transition-all duration-200" title="Admin Portal" aria-label="Buka Admin Portal">
+                    <i class='bx bx-user-circle text-2xl'></i>
+                </button>
                 <button onclick="toggleMobileNav()" class="md:hidden text-2xl text-slate-700 p-1">
                     <i class='bx bx-menu'></i>
                 </button>
@@ -490,7 +514,7 @@
         <section id="sec-admin" class="hidden space-y-6">
             <div id="adminLoginBox" class="bento-card p-6 max-w-md mx-auto space-y-4">
                 <div class="text-center">
-                    <div class="w-12 h-12 bg-slate-900 text-white rounded-2xl mx-auto flex items-center justify-center text-2xl font-bold mb-2">L</div>
+                    <div id="adminLoginLogoContainer" class="w-12 h-12 mx-auto mb-2 flex items-center justify-center overflow-hidden rounded-2xl bg-lumen-600 text-white text-2xl font-bold shadow-md">L</div>
                     <h3 class="font-bold text-lg text-slate-900">Admin Authentication</h3>
                     <p class="text-xs text-slate-500">Akses Sistem Manajemen LUMEN 3D Printing</p>
                 </div>
@@ -533,7 +557,7 @@
 
                 <!-- SUB TAB 1: ORDERS LIST -->
                 <div id="tab-admin-orders" class="space-y-4">
-                    <p class="text-xs text-slate-500">Sesuaikan berat aktual dan harga jual per gram setelah pengecekan admin, lalu tekan <strong>Simpan</strong>. Total order dihitung ulang dan disinkronkan ke Google Sheets.</p>
+                    <p class="text-xs text-slate-500">Koreksi berat aktual, harga jual per gram, waktu cetak, atau masukkan harga manual final. Perubahan disimpan ke Google Sheets.</p>
                     <div class="bento-card p-4 overflow-x-auto">
                         <table class="w-full text-left text-xs text-slate-600">
                             <thead class="bg-slate-50 text-slate-700 uppercase tracking-wider">
@@ -543,7 +567,9 @@
                                     <th class="p-3">Spesifikasi & Rincian</th>
                                     <th class="p-3">Berat Aktual (g)</th>
                                     <th class="p-3">Harga Jual / Gram</th>
+                                    <th class="p-3">Waktu Cetak (jam)</th>
                                     <th class="p-3">Total Harga</th>
+                                    <th class="p-3">Koreksi Harga Manual (Rp)</th>
                                     <th class="p-3">Status</th>
                                     <th class="p-3">Aksi (Koreksi / Nota)</th>
                                 </tr>
@@ -704,7 +730,12 @@
                             <input type="text" id="settingWA" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
                         </div>
                         <div>
-                            <label class="text-xs font-semibold text-slate-600 block mb-1">Link Google Maps (tautan lengkap atau koordinat)</label>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">Biaya Mesin per Jam (Rp)</label>
+                            <input type="number" id="settingMachineCostPerHour" min="0" step="100" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                            <p class="text-[10px] text-slate-500 mt-1">Dipakai pada estimasi biaya cetak, koreksi harga, dan laporan profit.</p>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-slate-600 block mb-1">Link Google Maps </label>
                             <input type="text" id="settingMapsUrl" placeholder="https://www.google.com/maps/place/... atau -7.9482,112.617" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
                         </div>
                         <button onclick="saveAdminSettings()" class="btn-primary py-2 text-xs font-bold flex items-center gap-1">
@@ -956,8 +987,13 @@
         <span id="toastMsg">Notifikasi</span>
     </div>
 
+    <a id="floatingWA" href="https://wa.me/6289528080341" target="_blank" rel="noopener noreferrer" aria-label="Hubungi admin melalui WhatsApp" class="fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-40 flex items-center justify-center gap-1.5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg transition-all duration-200 hover:scale-105 w-12 h-12 sm:w-auto sm:h-auto sm:px-4 sm:py-2.5">
+        <i class='bx bxl-whatsapp text-2xl'></i>
+        <span class="hidden sm:inline font-semibold text-xs">Hubungi Kami</span>
+    </a>
+
     <script>
-        const APP_URL = "https://script.google.com/macros/s/AKfycbyrp51bgDxawnaj-qn5OSWQOGSpvMp0MF8wxvHjYRUXAGMP9rKvxGRH0c1zmPvcRGxF/exec";
+        const APP_URL = "https://script.google.com/macros/s/AKfycbz628Sj9AbjAaUZ_KHMh0UFWdwL2iAjinrrko-vrh31N_HPYCW6w5ZPuwkZZf7S7BX9/exec";
 
         let state = {
             materials: [
@@ -978,7 +1014,8 @@
                 brandName: 'LUMEN 3D PRINTING SERVICES',
                 logoUrl: '',
                 address: 'Jl. Sukarno Hatta No. 45, Lowokwaru, Malang, Jawa Timur',
-                wa: '6289528080341',
+                wa: '089528080341',
+                machineCostPerHour: 1500,
                 mapsUrl: 'https://www.google.com/maps/place/LUMEN+3D+Printing+Malang/@-7.9887744,112.6343202,17z/data=!3m1!4b1!4m6!3m5!1s0x2dd629003d13dc7d:0xf30a174967a25271!8m2!3d-7.9887744!4d112.6368951!16s%2Fg%2F11myl8trn_?entry=ttu&g_ep=EgoyMDI2MDkzMC4wIKXMDSoASAFQAw%3D%3D'
             }
         };
@@ -1049,9 +1086,11 @@
                 color: String(getValue('color', 'Warna') || '-'),
                 qty: Number(getValue('qty', 'quantity', 'Jumlah')) || 1,
                 weight: Number(getValue('weight', 'Berat')) || 0,
+                printTime: Number(getValue('printTime', 'print_time', 'Waktu Cetak')) || 0,
                 basePrice: Number(getValue('basePrice', 'base_price', 'Biaya Cetak')) || 0,
                 sellGram: Number(getValue('sellGram', 'sellPricePerGram', 'sell_price_per_gram', 'Harga Jual per Gram', 'Harga Jual/Gram', 'Harga Jual / Gram')) || 0,
                 total: Number(getValue('total', 'Total', 'totalPrice')) || 0,
+                manualPrice: Number(getValue('manualPrice', 'manual_price', 'Harga Manual')) || 0,
                 status,
                 date: String(getValue('date', 'Tanggal')),
                 additionalItems
@@ -1070,7 +1109,7 @@
                     if (result.data.settings) {
                         state.settings = { ...state.settings, ...result.data.settings };
                         if (String(state.settings.wa).replace(/\D/g, '') === '6281234567890') {
-                            state.settings.wa = '6289528080341';
+                            state.settings.wa = '089528080341';
                         }
                     }
                     
@@ -1128,7 +1167,7 @@
 
         function applySettingsToUI() {
             if (state.settings.brandName) {
-                document.getElementById('brandName').innerText = state.settings.brandName.split(' ')[0] || 'LUMEN';
+                document.getElementById('brandName').innerText = state.settings.brandName.split(' ')[0] || '';
                 document.getElementById('brandTagline').innerText = state.settings.brandName;
                 document.getElementById('invBrand').innerText = state.settings.brandName;
                 document.getElementById('invFooterBrand').innerText = state.settings.brandName;
@@ -1136,23 +1175,28 @@
             if (state.settings.address) {
                 document.getElementById('workshopAddress').innerText = state.settings.address;
             }
-            if (state.settings.wa) {
-                document.getElementById('btnQuickWA').href = `https://wa.me/${state.settings.wa}`;
-            }
+            const waNumber = String(state.settings.wa || '089528080341').replace(/\D/g, '').replace(/^0/, '62');
+            document.getElementById('floatingWA').href = `https://wa.me/${waNumber}`;
             if (state.settings.mapsUrl) {
                 const mapEmbedUrl = getGoogleMapsEmbedUrl(state.settings.mapsUrl);
                 document.getElementById('mapsEmbed').src = mapEmbedUrl;
                 document.getElementById('btnOpenMaps').href = getGoogleMapsDirectUrl(state.settings.mapsUrl);
             }
             if (state.settings.logoUrl) {
-                document.getElementById('mainLogoContainer').innerHTML = `<img src="${state.settings.logoUrl}" class="h-10 w-auto rounded-xl object-contain">`;
-                document.getElementById('invLogoContainer').innerHTML = `<img src="${state.settings.logoUrl}" class="h-10 w-auto rounded-xl object-contain">`;
+                document.getElementById('mainLogoContainer').innerHTML = `<img src="${state.settings.logoUrl}" alt="Logo ${state.settings.brandName || 'brand'}" class="h-10 w-auto rounded-xl object-contain">`;
+                document.getElementById('invLogoContainer').innerHTML = `<img src="${state.settings.logoUrl}" alt="Logo ${state.settings.brandName || 'brand'}" class="h-10 w-auto rounded-xl object-contain">`;
+                document.getElementById('adminLoginLogoContainer').innerHTML = `<img src="${state.settings.logoUrl}" alt="Logo ${state.settings.brandName || 'brand'}" class="w-full h-full object-contain bg-white">`;
+            } else {
+                document.getElementById('mainLogoContainer').innerHTML = `<div class="w-10 h-10 rounded-xl bg-lumen-600 flex items-center justify-center text-white font-bold text-xl shadow-md">L</div>`;
+                document.getElementById('invLogoContainer').innerHTML = `<div class="w-9 h-9 bg-slate-900 text-white rounded-lg flex items-center justify-center font-bold text-base">L</div>`;
+                document.getElementById('adminLoginLogoContainer').innerHTML = 'L';
             }
             
             document.getElementById('settingBrandName').value = state.settings.brandName || '';
             document.getElementById('settingLogoUrl').value = state.settings.logoUrl || '';
             document.getElementById('settingAddress').value = state.settings.address || '';
             document.getElementById('settingWA').value = state.settings.wa || '';
+            document.getElementById('settingMachineCostPerHour').value = getMachineCostPerHour();
             document.getElementById('settingMapsUrl').value = state.settings.mapsUrl || '';
         }
 
@@ -1543,6 +1587,13 @@
     mesh.rotation.z = THREE.MathUtils.degToRad(10);
 
     mesh.position.set(0, 0, 0);
+
+    state.currentModelVolume = Math.max(0, calculateMeshVolume(geometry) / 1000);
+    geometry.computeBoundingBox();
+    const bounds = geometry.boundingBox;
+    document.getElementById('statDim').innerText = `${(bounds.max.x - bounds.min.x).toFixed(1)} x ${(bounds.max.y - bounds.min.y).toFixed(1)} x ${(bounds.max.z - bounds.min.z).toFixed(1)} mm`;
+    document.getElementById('statVol').innerText = `${state.currentModelVolume.toFixed(2)} cm³`;
+    recalculatePrice();
 }
 
         function reset3DCamera() {
@@ -1620,122 +1671,56 @@
             return Math.abs(volume);
         }
 
+        function getMachineCostPerHour() {
+            const configuredRate = Number(state.settings.machineCostPerHour);
+            return Number.isFinite(configuredRate) && configuredRate >= 0 ? configuredRate : 1500;
+        }
+
+        function calculatePrintEstimate(materialId, infillValue, qtyValue) {
+            const material = state.materials.find(item => item.id === materialId) || state.materials[0];
+            if (!material) return { material: null, weight: 0, time: 0, materialCost: 0, machineCost: 0, total: 0 };
+
+            const infill = Math.min(100, Math.max(0, Number(infillValue) || 20));
+            const qty = Math.max(1, Math.floor(Number(qtyValue) || 1));
+            const materialFactor = 0.30 + (infill / 100) * 0.70;
+            const weight = Math.max(0, Number(state.currentModelVolume) || 0) * Number(material.density) * materialFactor * qty;
+            const time = weight * 0.08;
+            const materialCost = Math.round(weight * Number(material.sellGram));
+            const machineCost = Math.round(time * getMachineCostPerHour());
+
+            return { material, weight, time, materialCost, machineCost, total: materialCost + machineCost };
+        }
+
         function recalculatePrice() {
             const matSelect = document.getElementById('calcMaterial');
-    if (!matSelect || matSelect.options.length === 0) return;
+            if (!matSelect || matSelect.options.length === 0) return;
 
-    const mat = state.materials.find(m => m.id === matSelect.value) || state.materials[0];
+            const estimate = calculatePrintEstimate(
+                matSelect.value,
+                document.getElementById('calcInfill').value,
+                document.getElementById('calcQty').value
+            );
+            if (!estimate.material) return;
 
-    const infill = parseInt(document.getElementById('calcInfill').value) || 20;
-    const qty = parseInt(document.getElementById('calcQty').value) || 1;
-
-    // ==========================================
-    // VOLUME STL
-    // currentModelVolume SUDAH dalam cm³
-    // ==========================================
-    const volumeCm3 = state.currentModelVolume;
-
-    // ==========================================
-    // ESTIMASI MATERIAL
-    // 30% = wall + top + bottom
-    // 70% = infill
-    // ==========================================
-    const materialFactor = 0.30 + ((infill / 100) * 0.70);
-
-    // Berat dalam gram
-    const weight = volumeCm3 * mat.density * materialFactor * qty;
-
-    // ==========================================
-    // ESTIMASI WAKTU
-    // ==========================================
-    const time = weight * 0.08;
-
-    // ==========================================
-    // BIAYA
-    // ==========================================
-    const matCost = Math.round(weight * mat.sellGram);
-
-    // Biaya mesin Rp1.500 / jam
-    const machineRate = 1500;
-    const machineCost = Math.round(time * machineRate);
-
-    const total = matCost + machineCost;
-
-    // ==========================================
-    // DISPLAY
-    // ==========================================
-    document.getElementById('statWeight').innerText =
-        `${weight.toFixed(1)} gram`;
-
-    document.getElementById('statTime').innerText =
-        `~${time.toFixed(1)} Jam`;
-
-    document.getElementById('calcMatName').innerText =
-        mat.name;
-
-    document.getElementById('priceMat').innerText =
-        `Rp ${matCost.toLocaleString('id-ID')}`;
-
-    document.getElementById('priceMachine').innerText =
-        `Rp ${machineCost.toLocaleString('id-ID')}`;
-
-    document.getElementById('priceTotal').innerText =
-        `Rp ${total.toLocaleString('id-ID')}`;
-}
-
-
-function syncOrderCalculation() {
-    const matSelect = document.getElementById('orderMaterial');
-    if (!matSelect || matSelect.options.length === 0) return;
-
-    const mat = state.materials.find(m => m.id === matSelect.value) || state.materials[0];
-
-    const infill = parseInt(document.getElementById('orderInfill').value) || 20;
-    const qty = parseInt(document.getElementById('orderQty').value) || 1;
-
-    // currentModelVolume sudah dalam cm³
-    const volumeCm3 = state.currentModelVolume;
-
-    // Estimasi material
-    const materialFactor = 0.30 + ((infill / 100) * 0.70);
-
-    // Berat gram
-    const weight = volumeCm3 * mat.density * materialFactor * qty;
-
-    // Estimasi waktu
-    const time = weight * 0.08;
-
-    // Biaya filament
-    const matCost = Math.round(weight * mat.sellGram);
-
-    // Biaya mesin
-    const machineRate = 1500;
-    const machineCost = Math.round(time * machineRate);
-
-    // Total
-    const total = matCost + machineCost;
-
-    document.getElementById('orderEstWeight').innerText =
-        `${weight.toFixed(1)} Gram`;
-
-    document.getElementById('orderEstTotal').innerText =
-        `Rp ${total.toLocaleString('id-ID')}`;
-}
+            document.getElementById('statWeight').innerText = `${estimate.weight.toFixed(1)} gram`;
+            document.getElementById('statTime').innerText = `~${estimate.time.toFixed(1)} Jam`;
+            document.getElementById('calcMatName').innerText = estimate.material.name;
+            document.getElementById('priceMat').innerText = `Rp ${estimate.materialCost.toLocaleString('id-ID')}`;
+            document.getElementById('priceMachine').innerText = `Rp ${estimate.machineCost.toLocaleString('id-ID')}`;
+            document.getElementById('priceTotal').innerText = `Rp ${estimate.total.toLocaleString('id-ID')}`;
+        }
 
         function syncOrderCalculation() {
             const matSelect = document.getElementById('orderMaterial');
             if (!matSelect || matSelect.options.length === 0) return;
-            const mat = state.materials.find(m => m.id === matSelect.value) || state.materials[0];
-            const infill = parseInt(document.getElementById('orderInfill').value) || 20;
-            const qty = parseInt(document.getElementById('orderQty').value) || 1;
 
-            const estWeight = (state.currentModelVolume * mat.density * (0.3 + (infill / 100) * 0.7) * qty).toFixed(1);
-            const matCost = Math.round(estWeight * mat.sellGram);
-            const machineCost = Math.round((estWeight * 0.08) * 1500);
-            const total = matCost + machineCost;
-
-            document.getElementById('orderEstWeight').innerText = `${estWeight} Gram`;
-            document.getElementById('orderEstTotal').innerText = `Rp ${total.toLocaleString('id-ID')}`;
+            const estimate = calculatePrintEstimate(
+                matSelect.value,
+                document.getElementById('orderInfill').value,
+                document.getElementById('orderQty').value
+            );
+            document.getElementById('orderEstWeight').innerText = `${estimate.weight.toFixed(1)} Gram`;
+            document.getElementById('orderEstTotal').innerText = `Rp ${estimate.total.toLocaleString('id-ID')}`;
         }
 
         function switchTab(tab) {
@@ -1743,12 +1728,19 @@ function syncOrderCalculation() {
                 const sec = document.getElementById(`sec-${t}`);
                 const btn = document.getElementById(`nav-${t}`);
                 if (sec) sec.classList.add('hidden');
-                if (btn) btn.className = 'nav-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-slate-600 hover:text-slate-900';
+                if (btn) btn.classList.remove('nav-btn-active');
             });
 
-            document.getElementById(`sec-${tab}`).classList.remove('hidden');
+            const activeSection = document.getElementById(`sec-${tab}`);
             const activeBtn = document.getElementById(`nav-${tab}`);
-            if (activeBtn) activeBtn.className = 'nav-btn px-4 py-1.5 rounded-lg text-sm font-semibold text-slate-700 bg-white shadow-sm';
+            const adminAccessButton = document.getElementById('adminAccessButton');
+            if (activeSection) activeSection.classList.remove('hidden');
+            if (activeBtn) activeBtn.classList.add('nav-btn-active');
+            if (adminAccessButton) {
+                adminAccessButton.classList.toggle('bg-lumen-600', tab === 'admin');
+                adminAccessButton.classList.toggle('text-white', tab === 'admin');
+                adminAccessButton.classList.toggle('shadow-md', tab === 'admin');
+            }
             document.getElementById('mobileNav').classList.add('hidden');
         }
 
@@ -1757,6 +1749,12 @@ function syncOrderCalculation() {
         }
 
         function proceedToOrderWithCurrentConfig() {
+            const calcMaterial = document.getElementById('calcMaterial');
+            const orderMaterial = document.getElementById('orderMaterial');
+            if (calcMaterial && orderMaterial) orderMaterial.value = calcMaterial.value;
+
+            document.getElementById('orderInfill').value = document.getElementById('calcInfill').value;
+            document.getElementById('orderQty').value = document.getElementById('calcQty').value;
             switchTab('order');
             syncOrderCalculation();
         }
@@ -1811,6 +1809,7 @@ function syncOrderCalculation() {
             const totalStr = document.getElementById('orderEstTotal').innerText.replace(/[^0-9]/g, '');
             const basePrice = parseInt(totalStr);
 
+            const printEstimate = calculatePrintEstimate(matId, document.getElementById('orderInfill').value, qty);
             const payload = {
                 id: newId,
                 name,
@@ -1819,6 +1818,7 @@ function syncOrderCalculation() {
                 material: mat.name,
                 color,
                 weight,
+                printTime: printEstimate.time,
                 qty,
                 sellGram: Number(mat.sellGram) || 0,
                 basePrice,
@@ -1983,6 +1983,67 @@ function syncOrderCalculation() {
             document.getElementById(`sub-${sub}`).className = 'px-4 py-2 text-sm font-bold border-b-2 border-lumen-600 text-lumen-600';
         }
 
+        function getOrderPrintTime(order) {
+            const recordedTime = Number(order?.printTime);
+            return Number.isFinite(recordedTime) && recordedTime > 0
+                ? recordedTime
+                : (Number(order?.weight) || 0) * 0.08;
+        }
+
+        async function saveOrderManualPrice(orderId) {
+            const order = state.orders.find(item => item.id === orderId);
+            const input = document.getElementById(`orderManualPrice_${orderId}`);
+            if (!order || !input) return;
+
+            const isManualPrice = input.value.trim() !== '';
+            const enteredPrice = Number(input.value);
+            if (isManualPrice && (!Number.isFinite(enteredPrice) || enteredPrice < 0)) {
+                showToast('Masukkan harga manual total yang valid.');
+                return;
+            }
+
+            const additionalItems = Array.isArray(order.additionalItems) ? order.additionalItems : [];
+            const extraTotal = additionalItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+            const material = state.materials.find(item => item.name === order.material);
+            const sellGram = Number(order.sellGram) || Number(material?.sellGram) || 0;
+            const automaticBasePrice = Math.round((Number(order.weight) || 0) * sellGram)
+                + Math.round(getOrderPrintTime(order) * getMachineCostPerHour());
+            const manualPrice = isManualPrice ? enteredPrice : 0;
+            if (isManualPrice && manualPrice < extraTotal) {
+                showToast('Harga total manual tidak boleh kurang dari jumlah layanan tambahan.');
+                return;
+            }
+
+            const previousOrder = { ...order };
+            const basePrice = isManualPrice ? manualPrice - extraTotal : automaticBasePrice;
+            const total = basePrice + extraTotal;
+            order.basePrice = basePrice;
+            order.manualPrice = manualPrice;
+            order.total = total;
+            renderAdminData();
+            showToast(`Menyimpan harga manual order ${orderId}...`);
+
+            const response = await callBackendAPI('SAVE_ORDER_EDITS', {
+                id: orderId,
+                weight: order.weight,
+                sellGram: order.sellGram,
+                basePrice,
+                additionalItems,
+                total,
+                manualPrice,
+                status: order.status
+            });
+
+            if (!response || response.status !== 'success') {
+                Object.assign(order, previousOrder);
+                renderAdminData();
+                return;
+            }
+            showToast(isManualPrice
+                ? `Harga manual Rp ${manualPrice.toLocaleString('id-ID')} tersimpan untuk ${orderId}.`
+                : `Harga otomatis order ${orderId} dipulihkan.`);
+        }
+
         async function saveOrderGramPrice(orderId) {
             const order = state.orders.find(item => item.id === orderId);
             const input = document.getElementById(`orderSellGram_${orderId}`);
@@ -1996,7 +2057,9 @@ function syncOrderCalculation() {
                 return;
             }
 
-            const basePrice = Math.round(weight * sellGram) + Math.round(weight * 0.08 * 1500);
+            const printTime = getOrderPrintTime(order);
+            const basePrice = Math.round(weight * sellGram) + Math.round(printTime * getMachineCostPerHour());
+            order.manualPrice = 0;
             const additionalItems = Array.isArray(order.additionalItems) ? order.additionalItems : [];
             const extraTotal = additionalItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
             const total = basePrice + extraTotal;
@@ -2005,20 +2068,79 @@ function syncOrderCalculation() {
             const response = await callBackendAPI('SAVE_ORDER_EDITS', {
                 id: orderId,
                 weight,
+                printTime,
                 sellGram,
                 basePrice,
                 additionalItems,
                 total,
+                manualPrice: 0,
                 status: order.status
             });
 
             if (!response || response.status !== 'success') return;
             order.weight = weight;
+            order.printTime = printTime;
             order.sellGram = sellGram;
             order.basePrice = basePrice;
             order.total = total;
             renderAdminData();
             showToast(`Harga Rp ${sellGram.toLocaleString('id-ID')}/gram tersimpan untuk ${orderId}.`);
+        }
+
+        async function saveOrderPrintTime(orderId) {
+            const order = state.orders.find(item => item.id === orderId);
+            const input = document.getElementById(`orderPrintTime_${orderId}`);
+            if (!order || !input) return;
+
+            const printTime = Number(input.value);
+            if (input.value.trim() === '' || !Number.isFinite(printTime) || printTime < 0) {
+                showToast('Waktu cetak harus berupa angka nol atau lebih.');
+                return;
+            }
+
+            const additionalItems = Array.isArray(order.additionalItems) ? order.additionalItems : [];
+            const extraTotal = additionalItems.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+            const material = state.materials.find(item => item.name === order.material);
+            const sellGram = Number(order.sellGram) || Number(material?.sellGram) || 0;
+            const manualPrice = Number(order.manualPrice) || 0;
+            const basePrice = manualPrice > 0
+                ? Math.max(0, manualPrice - extraTotal)
+                : Math.round((Number(order.weight) || 0) * sellGram) + Math.round(printTime * getMachineCostPerHour());
+            const total = basePrice + extraTotal;
+
+            const response = await callBackendAPI('SAVE_ORDER_EDITS', {
+                id: orderId,
+                weight: Number(order.weight) || 0,
+                printTime,
+                sellGram,
+                basePrice,
+                additionalItems,
+                total,
+                manualPrice,
+                status: order.status
+            });
+            if (!response || response.status !== 'success') return;
+
+            order.printTime = printTime;
+            order.sellGram = sellGram;
+            order.basePrice = basePrice;
+            order.total = total;
+            renderAdminData();
+            showToast(`Waktu cetak ${orderId} tersimpan.`);
+        }
+
+        async function deleteOrder(orderId) {
+            const order = state.orders.find(item => item.id === orderId);
+            if (!order) return;
+            if (!confirm(`Hapus order ${orderId} milik ${order.name}? Tindakan ini tidak dapat dibatalkan.`)) return;
+
+            showToast(`Menghapus order ${orderId}...`);
+            const response = await callBackendAPI('DELETE_ORDER', { id: orderId });
+            if (!response || response.status !== 'success') return;
+
+            state.orders = state.orders.filter(item => item.id !== orderId);
+            renderAdminData();
+            showToast(`Order ${orderId} berhasil dihapus.`);
         }
 
         async function updateOrderStatusDirectly(orderId, newStatus) {
@@ -2064,7 +2186,22 @@ function syncOrderCalculation() {
                             </div>
                             <span class="text-[10px] text-slate-400">/ gram</span>
                         </td>
+                        <td class="p-3">
+                            <div class="flex items-center gap-1 min-w-[150px]">
+                                <input type="number" min="0" step="0.1" id="orderPrintTime_${o.id}" value="${getOrderPrintTime(o).toFixed(1)}" aria-label="Waktu cetak dalam jam untuk ${o.id}" class="w-20 bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-semibold">
+                                <span class="text-[10px] text-slate-500">jam</span>
+                                <button onclick="saveOrderPrintTime('${o.id}')" class="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg font-bold" title="Simpan waktu cetak">Simpan</button>
+                            </div>
+                        </td>
                         <td class="p-3 font-bold text-slate-900">Rp ${(o.total || 0).toLocaleString('id-ID')}</td>
+                        <td class="p-3">
+                            <div class="flex items-center gap-1 min-w-[150px]">
+                                <span class="text-slate-500">Rp</span>
+                                <input type="number" min="0" step="1" id="orderManualPrice_${o.id}" value="${o.manualPrice || ''}" placeholder="Harga total" aria-label="Harga total manual untuk ${o.id}" class="w-28 bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-semibold">
+                                <button onclick="saveOrderManualPrice('${o.id}')" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg font-bold">Simpan</button>
+                            </div>
+                            <span class="text-[10px] text-slate-400">Kosongkan untuk harga otomatis</span>
+                        </td>
                         <td class="p-3">
                             <select onchange="updateOrderStatusDirectly('${o.id}', this.value)" class="bg-slate-100 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold uppercase">
                                 <option value="QUEUE" ${o.status==='QUEUE'?'selected':''}>QUEUE / WAITING</option>
@@ -2079,7 +2216,8 @@ function syncOrderCalculation() {
                         <td class="p-3">
                             <div class="flex items-center gap-1">
                                 <button onclick="openEditOrderModal('${o.id}')" class="p-1.5 bg-lumen-50 hover:bg-lumen-100 text-lumen-700 rounded-lg"><i class='bx bx-edit text-base'></i></button>
-                                <button onclick="openInvoiceModal('${o.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg"><i class='bx bx-receipt text-base'></i></button>
+                                <button onclick="openInvoiceModal('${o.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg" title="Lihat nota"><i class='bx bx-receipt text-base'></i></button>
+                                <button onclick="deleteOrder('${o.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg" title="Hapus order"><i class='bx bx-trash text-base'></i></button>
                             </div>
                         </td>
                     </tr>
@@ -2221,7 +2359,7 @@ function syncOrderCalculation() {
                 const orderRevenue = Number(order.total) || 0;
                 const material = state.materials.find(item => item.name === order.material);
                 const materialCost = material ? (Number(order.weight) || 0) * (Number(material.costGram) || 0) : 0;
-                const machineCost = (Number(order.weight) || 0) * 0.08 * 1500;
+                const machineCost = getOrderPrintTime(order) * getMachineCostPerHour();
                 const orderProfit = orderRevenue - materialCost - machineCost;
                 revenue += orderRevenue;
                 profit += orderProfit;
@@ -2300,7 +2438,7 @@ function syncOrderCalculation() {
             const sellGram = Math.max(0, Number(document.getElementById('editSellGram').value) || 0);
             const weight = Math.max(0, Number(document.getElementById('editActualWeight').value) || 0);
             const materialCost = Math.round(weight * sellGram);
-            const machineCost = Math.round(weight * 0.08 * 1500);
+            const machineCost = Math.round(weight * 0.08 * getMachineCostPerHour());
             const basePrice = materialCost + machineCost;
             const extraTotal = currentExtraItems.reduce((acc, curr) => acc + (Number(curr.price) || 0), 0);
             const total = basePrice + extraTotal;
@@ -2329,6 +2467,7 @@ function syncOrderCalculation() {
             order.basePrice = basePrice;
             order.additionalItems = [...currentExtraItems];
             order.total = total;
+            order.manualPrice = 0;
             order.status = status;
 
             renderAdminData();
@@ -2342,6 +2481,7 @@ function syncOrderCalculation() {
                 basePrice: basePrice,
                 additionalItems: currentExtraItems,
                 total: total,
+                manualPrice: 0,
                 status: status
             });
 
@@ -2467,16 +2607,26 @@ function syncOrderCalculation() {
         }
 
         async function saveAdminSettings() {
+            const machineCostPerHour = Number(document.getElementById('settingMachineCostPerHour').value);
+            if (!Number.isFinite(machineCostPerHour) || machineCostPerHour < 0) {
+                showToast('Biaya mesin harus berupa angka nol atau lebih.');
+                return;
+            }
+
             const payload = {
                 brandName: document.getElementById('settingBrandName').value,
                 logoUrl: document.getElementById('settingLogoUrl').value,
                 address: document.getElementById('settingAddress').value,
                 wa: document.getElementById('settingWA').value,
+                machineCostPerHour,
                 mapsUrl: document.getElementById('settingMapsUrl').value
             };
 
             state.settings = { ...state.settings, ...payload };
             applySettingsToUI();
+            recalculatePrice();
+            syncOrderCalculation();
+            renderRevenueReport();
             showToast('Menyimpan Pengaturan & Branding...');
 
             await callBackendAPI('SAVE_SETTINGS', payload);
