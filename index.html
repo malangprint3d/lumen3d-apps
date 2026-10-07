@@ -828,7 +828,29 @@
                         </div>
                         <div>
                             <label class="text-xs font-semibold text-slate-600 block mb-1">URL Logo Nota / Invoice</label>
-                            <input type="text" id="settingLogoUrl" placeholder="https://domain.com/logo.png" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+
+                            <input 
+                                type="text" 
+                                id="settingLogoUrl" 
+                                placeholder="https://domain.com/logo.png" 
+                                class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm"
+                            >
+
+                            <!-- Preview Logo -->
+                            <div class="mt-3 flex items-center gap-3">
+                                <div class="w-16 h-16 rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden shadow-sm">
+                                    <img 
+                                        id="settingLogoPreview"
+                                        src=""
+                                        alt="Preview Logo"
+                                        class="w-full h-full object-contain"
+                                    >
+                                </div>
+
+                                <span class="text-[11px] text-slate-500">
+                                    Preview logo invoice
+                                </span>
+                            </div>
                         </div>
                         <div>
                             <label class="text-xs font-semibold text-slate-600 block mb-1">Alamat Workshop</label>
@@ -1315,7 +1337,20 @@
                 document.getElementById('invLogoContainer').innerHTML = `<div class="w-9 h-9 bg-slate-900 text-white rounded-lg flex items-center justify-center font-bold text-base">L</div>`;
                 document.getElementById('adminLoginLogoContainer').innerHTML = 'L';
             }
-            
+            const logoUrlInput = document.getElementById('settingLogoUrl');
+            const logoPreview = document.getElementById('settingLogoPreview');
+
+            if (logoUrlInput && logoPreview) {
+                logoUrlInput.addEventListener('input', function () {
+                    const logoUrl = this.value.trim();
+
+                    if (logoUrl) {
+                        logoPreview.src = logoUrl;
+                    } else {
+                        logoPreview.removeAttribute('src');
+                    }
+                });
+            }
             document.getElementById('settingBrandName').value = state.settings.brandName || '';
             document.getElementById('settingLogoUrl').value = state.settings.logoUrl || '';
             document.getElementById('settingAddress').value = state.settings.address || '';
