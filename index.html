@@ -185,9 +185,14 @@
                     </div>
                 </div>
                 <div>
-                    <span class="font-bold text-lg text-slate-900 tracking-tight block leading-none" id="brandName">LUMEN</span>
-                    <span class="text-[11px] text-slate-500 font-medium tracking-wide uppercase" id="brandTagline">3D Printing Services</span>
-                </div>
+                <span class="font-bold text-lg text-slate-900 tracking-tight block leading-none" id="brandName">
+                    LUMEN
+                </span>
+
+                <span class="text-[11px] text-slate-500 font-medium italic tracking-wide uppercase block leading-[1.5]" id="brandTagline">
+                    3D Printing Services
+                </span>
+            </div>
             </div>
 
             <nav class="hidden md:flex flex-1 min-w-0 items-center justify-end gap-1">
@@ -619,7 +624,7 @@
             <div id="adminLoginBox" class="bento-card p-6 max-w-md mx-auto space-y-4">
                 <div class="text-center">
                     <div id="adminLoginLogoContainer" class="w-12 h-12 mx-auto mb-2 flex items-center justify-center overflow-hidden rounded-2xl bg-lumen-600 text-white text-2xl font-bold shadow-md">L</div>
-                    <h3 class="font-bold text-lg text-slate-900">Admin Authentication</h3>
+                    <h3 class="font-bold text-lg text-slate-900">Admin Portal</h3>
                     <p class="text-xs text-slate-500">Akses Sistem Manajemen LUMEN 3D Printing</p>
                 </div>
                 <form onsubmit="handleAdminLogin(event)" class="space-y-3" autocomplete="off">
@@ -1115,7 +1120,8 @@
             currentModelVolume: 0,
             isAdmin: false,
             settings: {
-                brandName: 'LUMEN 3D PRINTING SERVICES',
+                brandName: 'LUMEN',
+                brandTagline: '3D Printing Services',
                 logoUrl: '',
                 address: 'Jl. Sukarno Hatta No. 45, Lowokwaru, Malang, Jawa Timur',
                 wa: '089528080341',
@@ -1270,11 +1276,25 @@
         }
 
         function applySettingsToUI() {
-            if (state.settings.brandName) {
-                document.getElementById('brandName').innerText = state.settings.brandName.split(' ')[0] || '';
-                document.getElementById('brandTagline').innerText = state.settings.brandName;
-                document.getElementById('invBrand').innerText = state.settings.brandName;
-                document.getElementById('invFooterBrand').innerText = state.settings.brandName;
+
+            // =========================
+            // BRAND NAVBAR
+            // =========================
+            const brandName = state.settings.brandName || 'LUMEN';
+            const brandTagline = state.settings.brandTagline || '3D Printing Services';
+
+            document.getElementById('brandName').innerText = brandName;
+            document.getElementById('brandTagline').innerText = brandTagline;
+
+            // =========================
+            // INVOICE
+            // =========================
+            document.getElementById('invBrand').innerText = brandName;
+            document.getElementById('invFooterBrand').innerText = brandName;
+
+            if (state.settings.brandTagline) {
+                document.getElementById('brandTagline').innerText =
+                    state.settings.brandTagline;
             }
             if (state.settings.address) {
                 document.getElementById('workshopAddress').innerText = state.settings.address;
