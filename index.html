@@ -198,14 +198,18 @@
             <nav class="hidden md:flex flex-1 min-w-0 items-center justify-end gap-1">
                 <button onclick="switchTab('home')" id="nav-home" class="nav-btn nav-btn-active whitespace-nowrap px-2.5 lg:px-4 py-2 rounded-xl text-xs lg:text-sm font-semibold">Home & Preview</button>
                 <button onclick="switchTab('order')" id="nav-order" class="nav-btn whitespace-nowrap px-2.5 lg:px-4 py-2 rounded-xl text-xs lg:text-sm font-semibold">Mulai Order</button>
-                <button onclick="switchTab('track')" id="nav-track" class="nav-btn whitespace-nowrap px-2.5 lg:px-4 py-2 rounded-xl text-xs lg:text-sm font-semibold">Cek Order</button>
+                <button onclick="switchTab('track')" id="nav-track" class="nav-btn whitespace-nowrap px-2.5 lg:px-4 py-2 rounded-xl text-xs lg:text-sm font-semibold">Cek Status Order</button>
             </nav>
 
             <div class="flex items-center gap-2 shrink-0">
                 <button onclick="switchTab('admin')" id="adminAccessButton" class="hidden md:inline-flex items-center justify-center w-10 h-10 rounded-xl text-lumen-700 hover:text-lumen-700 hover:bg-lumen-50 transition-all duration-200" title="Admin Portal" aria-label="Buka Admin Portal">
                     <i class='bx bx-user-circle text-2xl'></i>
                 </button>
-                <button onclick="toggleMobileNav()" class="md:hidden text-2xl text-slate-700 p-1">
+                <button onclick="switchTab('track')" class="md:hidden inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-lumen-700 hover:bg-lumen-50 whitespace-nowrap" aria-label="Cek Status Order">
+                    <i class='bx bx-search-alt text-lg'></i>
+                    <span>Cek Status</span>
+                </button>
+                <button onclick="toggleMobileNav()" class="md:hidden text-2xl text-slate-700 p-1" aria-label="Buka menu">
                     <i class='bx bx-menu'></i>
                 </button>
             </div>
@@ -214,7 +218,6 @@
         <div id="mobileNav" class="hidden md:hidden border-t border-slate-100 bg-white px-4 py-3 space-y-2">
             <button onclick="switchTab('home')" class="block w-full text-left py-2 px-3 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50">Home & Preview</button>
             <button onclick="switchTab('order')" class="block w-full text-left py-2 px-3 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50">Mulai Order</button>
-            <button onclick="switchTab('track')" class="block w-full text-left py-2 px-3 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50">Cek Order</button>
             <button onclick="switchTab('admin')" class="block w-full text-left py-2 px-3 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50">Admin Portal</button>
         </div>
     </header>
@@ -266,6 +269,55 @@
                 Belum ada file dipilih.
             </p>
 
+        </div>
+    </div>
+
+    <div class="bento-card p-5 sm:p-6 space-y-4">
+        <div class="flex items-center justify-between gap-3">
+            <div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-lumen-600">Mudah &amp; transparan</span>
+                <h2 class="mt-1 text-lg sm:text-xl font-extrabold text-slate-900">Panduan Order Online</h2>
+            </div>
+            <span class="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700">
+                <i class='bx bx-check-shield text-base'></i> 4 langkah mudah
+            </span>
+        </div>
+
+                <div class="grid grid-cols-4 gap-1 sm:gap-3">
+            <div class="text-center">
+                <div class="relative flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-xl bg-transparent px-1 py-1 text-lumen-700 sm:min-h-[84px]">
+                    <i class='bx bx-cube-alt text-3xl sm:text-4xl'></i>
+                    <span class="text-xs sm:text-sm font-bold leading-tight">Upload STL</span>
+                    <i class='bx bx-right-arrow-alt absolute -right-2.5 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white text-lg text-lumen-600 shadow'></i>
+                </div>
+                <p class="mt-1 text-[8px] leading-tight text-slate-600 sm:text-[9px]">Lihat model 3D di preview</p>
+            </div>
+
+            <div class="text-center">
+                <div class="relative flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-xl bg-transparent px-1 py-1 text-lumen-700 sm:min-h-[84px]">
+                    <i class='bx bx-edit-alt text-3xl sm:text-4xl'></i>
+                    <span class="text-xs sm:text-sm font-bold leading-tight">Isi Form Order</span>
+                    <i class='bx bx-right-arrow-alt absolute -right-2.5 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white text-lg text-lumen-600 shadow'></i>
+                </div>
+                <p class="mt-1 text-[8px] leading-tight text-slate-600 sm:text-[9px]">Lengkapi data &amp; spesifikasi</p>
+            </div>
+
+            <div class="text-center">
+                <div class="relative flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-xl bg-transparent px-1 py-1 text-lumen-700 sm:min-h-[84px]">
+                    <i class='bx bx-send text-3xl sm:text-4xl'></i>
+                    <span class="text-xs sm:text-sm font-bold leading-tight">Kirim Pesanan</span>
+                    <i class='bx bx-right-arrow-alt absolute -right-2.5 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white text-lg text-lumen-600 shadow'></i>
+                </div>
+                <p class="mt-1 text-[8px] leading-tight text-slate-600 sm:text-[9px]">Dapatkan nomor antrean</p>
+            </div>
+
+            <div class="text-center">
+                <div class="flex min-h-[72px] flex-col items-center justify-center gap-1 rounded-xl bg-transparent px-1 py-1 text-lumen-700 sm:min-h-[84px]">
+                    <i class='bx bxl-whatsapp text-3xl sm:text-4xl'></i>
+                    <span class="text-xs sm:text-sm font-bold leading-tight">Konfirmasi Admin</span>
+                </div>
+                <p class="mt-1 text-[8px] leading-tight text-slate-600 sm:text-[9px]">Hubungi admin via WhatsApp</p>
+            </div>
         </div>
     </div>
 
@@ -396,7 +448,12 @@
         </section>
 
         <!-- SECTION 2: CUSTOMER ORDER WIZARD -->
-        <section id="sec-order" class="hidden space-y-6 max-w-3xl mx-auto">
+        <section id="sec-order" class="hidden space-y-4 max-w-3xl mx-auto">
+            <div class="flex justify-start">
+                <button type="button" onclick="switchTab('home')" class="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-lumen-700 hover:bg-lumen-50 transition" aria-label="Kembali ke Home">
+                    <i class='bx bx-left-arrow-alt text-xl'></i> Kembali ke Home
+                </button>
+            </div>
             <div class="bento-card p-6 sm:p-8 space-y-6">
                 <div>
                     <span class="text-xs font-bold uppercase tracking-wider text-lumen-600 block mb-1">Wizard Pemesanan Cetak 3D</span>
@@ -541,7 +598,12 @@
         </section>
 
         <!-- SECTION 3: CHECK ORDER / TRACKING WITH AUTO-FILTER & SUGGESTIONS -->
-        <section id="sec-track" class="hidden space-y-6 max-w-2xl mx-auto">
+        <section id="sec-track" class="hidden space-y-4 max-w-2xl mx-auto">
+            <div class="flex justify-start">
+                <button type="button" onclick="switchTab('home')" class="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold text-lumen-700 hover:bg-lumen-50 transition" aria-label="Kembali ke Home">
+                    <i class='bx bx-left-arrow-alt text-xl'></i> Kembali ke Home
+                </button>
+            </div>
             <div class="bento-card p-6 space-y-6">
                 <div>
                     <h2 class="text-xl font-bold text-slate-900">Pelacakan Status Order & Antrian</h2>
@@ -596,25 +658,12 @@
 
                 <div id="orderFollowUp" class="hidden space-y-3 border-t border-slate-100 pt-4">
                     <div>
-                        <h3 class="font-bold text-sm text-slate-900">Konfirmasi file &amp; Hubungi Admin</h3>
-                        <p class="text-xs text-slate-500 mt-1">File akan disimpan ke Sistem. Setelah berhasil, buka tombol WhatsApp untuk mengirim tautannya ke admin.</p>
+                        <h3 class="font-bold text-sm text-slate-900">Konfirmasi Order ke Admin</h3>
+                        <p class="text-xs text-slate-500 mt-1">Detail pesanan dan tautan file yang berhasil diunggah ke Google Drive akan disertakan otomatis.</p>
                     </div>
-                    <div>
-                        <label for="orderSupportFiles" class="text-xs font-semibold text-slate-700 block mb-1">File 3D / STL / SKP / File Support</label>
-                        <input type="file" id="orderSupportFiles" multiple accept=".stl,.skp,.obj,.3mf,.step,.stp,.iges,.igs,.gcode,.pdf,.png,.jpg,.jpeg,.zip,.rar" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs">
-                        <p id="orderSupportFileNames" class="text-[11px] text-slate-500 mt-1">(tambahan file opsional))</p>
-                    </div>
-                    <div>
-                        <label for="orderSupportNote" class="text-xs font-semibold text-slate-700 block mb-1">Keterangan untuk Admin (Opsional)</label>
-                        <textarea id="orderSupportNote" rows="2" placeholder="Contoh: Tolong cek ukuran dan orientasi model sebelum dicetak." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lumen-500"></textarea>
-                    </div>
-                    <button type="button" onclick="contactAdminWithOrderFiles()" class="w-full btn-primary py-3 rounded-xl flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700">
-                        <i class='bx bx-cloud-upload text-lg'></i> Unggah File
-                    </button>
                     <a id="orderSupportWhatsAppLink" target="_blank" rel="noopener noreferrer" class="hidden w-full btn-primary py-3 rounded-xl items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700">
-                        <i class='bx bxl-whatsapp text-lg'></i> Konfirmasi pesanan ke Admin
+                        <i class='bx bxl-whatsapp text-lg'></i> Konfirmasi Order ke Admin
                     </a>
-                    <p class="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200">Maksimal 5 file dengan total ukuran 5 MB per pengiriman. Setelah unggah berhasil, konfirmasi pesanan ke admin melalui WhatsApp.</p>
                 </div>
             </div>
         </section>
@@ -2014,6 +2063,32 @@
             });
         }
 
+        function setOrderConfirmationLink(order, uploadedFiles = [], note = '') {
+            const fileLinks = uploadedFiles.map(file => {
+                const fileReference = file.url || file.webViewLink || file.fileId || file.id;
+                return `- ${file.name}: ${fileReference || 'Tautan tidak tersedia'}`;
+            });
+            const message = [
+                `Halo Admin, saya ingin mengonfirmasi order ${order.id}.`,
+                `Nama: ${order.name}`,
+                `Nomor WhatsApp: ${order.phone}`,
+                `Alamat: ${order.address || '-'}`,
+                `Detail pesanan: Cetak 3D ${order.material} (${order.color}), ${order.qty} pcs`,
+                `Berat estimasi: ${Number(order.weight || 0).toFixed(1)} gram`,
+                `Estimasi biaya: Rp ${Number(order.total || 0).toLocaleString('id-ID')}`,
+                note ? `Catatan: ${note}` : '',
+                'Tautan file Google Drive:',
+                ...(fileLinks.length ? fileLinks : ['Belum ada file yang diunggah.'])
+            ].filter(Boolean).join('\n');
+            const adminPhone = String(state.settings.wa || '').replace(/\D/g, '').replace(/^0/, '62');
+            const whatsappLink = document.getElementById('orderSupportWhatsAppLink');
+            if (whatsappLink && adminPhone) {
+                whatsappLink.href = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`;
+                whatsappLink.classList.remove('hidden');
+                whatsappLink.classList.add('flex');
+            }
+        }
+
         async function uploadFilesForOrder(order, files, note = '') {
             if (files.length === 0) return true;
             if (files.length > 5) {
@@ -2041,76 +2116,9 @@
             if (!response || response.status !== 'success') return false;
 
             const uploadedFiles = Array.isArray(response.files) ? response.files : [];
-            const fileLinks = uploadedFiles.map(file => `- ${file.name}: ${file.url}`).join('\n');
-            const message = [
-                `Halo Admin, file pendukung untuk order ${order.id} sudah diunggah.`,
-                `Customer: ${order.name} (${order.phone})`,
-                note ? `Keterangan: ${note}` : '',
-                'Tautan file Google Drive:',
-                fileLinks || '(tautan file tidak tersedia)'
-            ].filter(Boolean).join('\n');
-            const adminPhone = String(state.settings.wa || '').replace(/\D/g, '').replace(/^0/, '62');
-            const whatsappLink = document.getElementById('orderSupportWhatsAppLink');
-            if (whatsappLink && adminPhone) {
-                whatsappLink.href = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`;
-                whatsappLink.classList.remove('hidden');
-                whatsappLink.classList.add('flex');
-            }
-            showToast('File tersimpan di Drive. Klik tombol WhatsApp untuk mengirim tautannya ke admin.');
+            setOrderConfirmationLink(order, uploadedFiles, note);
+            showToast('File tersimpan di Drive. Tautannya sudah disertakan pada konfirmasi WhatsApp.');
             return true;
-        }
-
-        async function contactAdminWithOrderFiles() {
-            const fileInput = document.getElementById('orderSupportFiles');
-            const files = Array.from(fileInput.files || []);
-            if (files.length === 0) {
-                showToast('Pilih minimal satu file untuk diunggah.');
-                fileInput.focus();
-                return;
-            }
-            if (files.length > 5) {
-                showToast('Maksimal 5 file per pengiriman.');
-                return;
-            }
-
-            const totalSize = files.reduce((total, file) => total + file.size, 0);
-            if (totalSize > 5 * 1024 * 1024) {
-                showToast('Total ukuran file maksimal 5 MB per pengiriman.');
-                return;
-            }
-
-            const order = state.orders.find(item => item.id === currentFollowUpOrderId);
-            if (!order) {
-                showToast('Data order tidak ditemukan. Silakan cari order Anda kembali.');
-                return;
-            }
-
-            const button = document.querySelector('#orderFollowUp button[onclick="contactAdminWithOrderFiles()"]');
-            const whatsappLink = document.getElementById('orderSupportWhatsAppLink');
-            const originalButtonHtml = button ? button.innerHTML : '';
-            if (whatsappLink) whatsappLink.classList.add('hidden');
-            if (button) {
-                button.disabled = true;
-                button.innerHTML = "<i class='bx bx-loader-alt bx-spin text-lg'></i> Mengunggah file...";
-            }
-
-            try {
-                const note = document.getElementById('orderSupportNote').value.trim();
-                const uploaded = await uploadFilesForOrder(order, files, note);
-                if (uploaded) {
-                    fileInput.value = '';
-                    document.getElementById('orderSupportNote').value = '';
-                    document.getElementById('orderSupportFileNames').innerText = 'Belum ada file dipilih.';
-                }
-            } catch (error) {
-                console.error('Gagal mengirim file order:', error);
-                showToast(error.message || 'Gagal membaca atau mengirim file.');
-            } finally {
-                if (button) {
-                    button.disabled = false;
-                    button.innerHTML = originalButtonHtml;
-                }
-            }
         }
 
         // SUBMIT ORDER TO GOOGLE SHEETS
@@ -2168,20 +2176,15 @@
             if (response && response.status === 'success') {
                 state.orders.unshift(payload);
                 currentFollowUpOrderId = newId;
-                const supportWhatsAppLink = document.getElementById('orderSupportWhatsAppLink');
-                supportWhatsAppLink.classList.add('hidden');
-                supportWhatsAppLink.classList.remove('flex');
-                document.getElementById('orderSupportFiles').value = '';
-                document.getElementById('orderSupportNote').value = '';
-                document.getElementById('orderSupportFileNames').innerText = 'Belum ada file dipilih.';
+                setOrderConfirmationLink(payload, [], projectNotes);
                 showToast(`Order ${newId} berhasil disimpan ke Google Sheets!`);
                 if (selectedModelFiles.length) {
                     try {
-                        const uploaded = await uploadFilesForOrder({ id: newId, name, phone }, selectedModelFiles, projectNotes);
-                        if (!uploaded) showToast('Order tersimpan, tetapi unggah file belum berhasil. Unggah ulang melalui halaman pelacakan.');
+                        const uploaded = await uploadFilesForOrder(payload, selectedModelFiles, projectNotes);
+                        if (!uploaded) showToast('Order tersimpan, tetapi file gagal diunggah ke Drive. Hubungi admin untuk mengirim file.');
                     } catch (error) {
                         console.error('Gagal mengunggah file model:', error);
-                        showToast('Order tersimpan, tetapi file gagal diunggah. Unggah ulang melalui halaman pelacakan.');
+                        showToast('Order tersimpan, tetapi file gagal diunggah ke Drive. Hubungi admin untuk mengirim file.');
                     }
                 }
                 document.getElementById('orderForm').reset();
@@ -3083,12 +3086,6 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('orderSupportFiles').addEventListener('change', event => {
-                const names = Array.from(event.target.files || []).map(file => file.name);
-                document.getElementById('orderSupportFileNames').innerText = names.length
-                    ? names.join(', ')
-                    : 'Belum ada file dipilih.';
-            });
             init3DViewer();
             fetchInitialData();
         });
